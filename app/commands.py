@@ -181,3 +181,149 @@ def register_commands(app):
                 click.secho(f'✗ Error creating super admin: {str(e)}', fg='red')
 
         click.echo('=' * 60)
+
+    @app.cli.command('clear-database')
+    @click.option('--keep-admin', is_flag=True, default=True, help='Keep the super admin account (default: True)')
+    @click.confirmation_option(prompt='Are you sure you want to delete all data? This cannot be undone!')
+    def clear_database_command(keep_admin):
+        """Clear all database data except super admin account"""
+        click.echo('=' * 60)
+        click.echo('Clear Database Data')
+        click.echo('=' * 60)
+        click.echo('')
+
+        with app.app_context():
+            from app.models.user import User
+            from app.models.member import Member
+            from app.models.contribution import Contribution
+            from app.models.membership_fee import MembershipFee
+            from app.models.loan import Loan, LoanRepayment
+            from app.models.welfare import WelfareRequest
+            from app.models.meeting import Meeting, MeetingAttendance
+            from app.models.expense import Expense
+            from app.models.notification import Notification
+
+            try:
+                # Get super admin before deletion
+                super_admin_user = None
+                super_admin_member_id = None
+
+                if keep_admin:
+                    super_admin_user = User.query.filter_by(role='SuperAdmin').first()
+                    if super_admin_user:
+                        super_admin_member_id = super_admin_user.member_id
+                        click.echo(f'Keeping super admin: {super_admin_user.username}')
+                    else:
+                        click.secho('Warning: No super admin found!', fg='yellow')
+
+                click.echo('')
+                click.echo('Deleting data...')
+
+                # Delete in order to respect foreign key constraints
+                deleted_counts = {}
+
+                # 1. Delete notifications
+                count = Notification.query.delete()
+                deleted_counts['Notifications'] = count
+                click.echo(f'  - Deleted {count} notifications')
+
+                # 2. Delete meeting attendance
+                count = MeetingAttendance.query.delete()
+                deleted_counts['Meeting Attendance'] = count
+                click.echo(f'  - Deleted {count} meeting attendance records')
+
+                # 3. Delete meetings
+                count = Meeting.query.delete()
+                deleted_counts['Meetings'] = count
+                click.echo(f'  - Deleted {count} meetings')
+
+                # 4. Delete expenses
+                count = Expense.query.delete()
+                deleted_counts['Expenses'] = count
+                click.echo(f'  - Deleted {count} expenses')
+
+                # 5. Delete loan repayments
+                count = LoanRepayment.query.delete()
+                deleted_counts['Loan Repayments'] = count
+                click.echo(f'  - Deleted {count} loan repayments')
+
+                # 6. Delete loans
+                count = Loan.query.delete()
+                deleted_counts['Loans'] = count
+                click.echo(f'  - Deleted {count} loans')
+
+                # 7. Delete welfare requests
+                count = WelfareRequest.query.delete()
+                deleted_counts['Welfare Requests'] = count
+                click.echo(f'  - Deleted {count} welfare requests')
+
+                # 8. Delete membership fees
+                count = MembershipFee.query.delete()
+                deleted_counts['Membership Fees'] = count
+                click.echo(f'  - Deleted {count} membership fees')
+
+                # 9. Delete contributions
+                count = Contribution.query.delete()
+                deleted_counts['Contributions'] = count
+                click.echo(f'  - Deleted {count} contributions')
+
+                # 10. Delete users (except super admin)
+                if keep_admin and super_admin_user:
+                    count = User.query.filter(User.id != super_admin_user.id).delete()
+                else:
+                    count = User.query.delete()
+                deleted_counts['Users'] = count
+                click.echo(f'  - Deleted {count} users')
+
+                # 11. Delete members (except super admin's member)
+                if keep_admin and super_admin_member_id:
+                    # First, delete next of kin for non-admin members
+                    from app.models.member import NextOfKin
+                    count = NextOfKin.query.filter(NextOfKin.member_id != super_admin_member_id).delete()
+                    deleted_counts['Next of Kin'] = count
+                    click.echo(f'  - Deleted {count} next of kin records')
+
+                    # Then delete members except admin
+                    count = Member.query.filter(Member.id != super_admin_member_id).delete()
+
+                    # Reset the admin member's data
+                    admin_member = Member.query.get(super_admin_member_id)
+                    if admin_member:
+                        admin_member.total_contributed = 0.00
+                        admin_member.consecutive_months_paid = 0
+                        admin_member.last_contribution_date = None
+                        admin_member.qualified_for_benefits = False
+                        click.echo(f'  - Reset admin member stats: {admin_member.full_name}')
+                else:
+                    from app.models.member import NextOfKin
+                    count_kin = NextOfKin.query.delete()
+                    deleted_counts['Next of Kin'] = count_kin
+                    click.echo(f'  - Deleted {count_kin} next of kin records')
+
+                    count = Member.query.delete()
+
+                deleted_counts['Members'] = count
+                click.echo(f'  - Deleted {count} members')
+
+                # Commit all deletions
+                db.session.commit()
+
+                click.echo('')
+                click.secho('✓ Database cleared successfully!', fg='green')
+                click.echo('')
+                click.echo('Summary:')
+                for entity, count in deleted_counts.items():
+                    click.echo(f'  {entity}: {count}')
+
+                if keep_admin and super_admin_user:
+                    click.echo('')
+                    click.secho(f'Super admin account preserved: {super_admin_user.username}', fg='green')
+
+            except Exception as e:
+                db.session.rollback()
+                click.echo('')
+                click.secho(f'✗ Error clearing database: {str(e)}', fg='red')
+                import traceback
+                click.echo(traceback.format_exc())
+
+        click.echo('=' * 60)

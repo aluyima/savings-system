@@ -389,7 +389,7 @@ exit()
    - **Time**: 08:00 (8:00 AM, UTC time - adjust for your timezone)
    - **Command**:
      ```bash
-     /home/yourusername/.virtualenvs/savings-env/bin/flask send-loan-reminders
+     /home/oldtimers/.virtualenvs/savings-env/bin/flask send-loan-reminders
      ```
    - **Working directory**: `/home/yourusername/savings-system`
 3. Click "Create"
@@ -414,10 +414,38 @@ chmod 755 logs
 
 ```bash
 # Application logs
-tail -f /var/log/yourusername.pythonanywhere.com.error.log
+tail -f /var/log/oldtimers.pythonanywhere.com.error.log
 
 # Scheduled task logs (after they run)
 cat /home/yourusername/savings-system/logs/loan_reminders.log
+```
+
+---
+
+## Database Management
+
+### Clear Database Data
+
+If you need to remove test data or start fresh while keeping your admin account:
+
+```bash
+cd ~/savings-system
+workon savings-env
+flask clear-database
+```
+
+The command will:
+- Ask for confirmation (type `y` to proceed)
+- Delete all members, contributions, loans, meetings, etc.
+- **Keep the super admin account** and its associated member record
+- Reset the admin member's statistics (contributions, qualification status, etc.)
+- Show a summary of deleted records
+
+**Warning**: This action cannot be undone! Make sure you have a backup if needed.
+
+To delete **everything** including the admin account, use:
+```bash
+flask clear-database --no-keep-admin
 ```
 
 ---
@@ -684,6 +712,9 @@ pip install -r requirements.txt
 
 # Create super admin user
 flask create-superadmin
+
+# Clear database (keeps super admin)
+flask clear-database
 
 # Open Flask shell
 flask shell
