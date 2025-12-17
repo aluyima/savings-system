@@ -443,10 +443,19 @@ The command will:
 
 **Warning**: This action cannot be undone! Make sure you have a backup if needed.
 
-To delete **everything** including the admin account, use:
+To delete **everything** including the admin account:
 ```bash
-flask clear-database --no-keep-admin
+# This will require you to create a new admin account after
+# Note: By default, --keep-admin is True, so you don't need to specify it
+# To delete admin too, run without the flag or explicitly set it to false
+flask clear-database
+# Then when prompted, the admin will be kept by default
+
+# If you want to skip the admin preservation (advanced use case):
+# You would need to modify the command parameters
 ```
+
+**Note**: The command keeps the admin by default. This is the safest option.
 
 ---
 

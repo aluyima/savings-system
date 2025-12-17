@@ -194,14 +194,15 @@ def register_commands(app):
 
         with app.app_context():
             from app.models.user import User
-            from app.models.member import Member
-            from app.models.contribution import Contribution
-            from app.models.membership_fee import MembershipFee
+            from app.models.member import Member, NextOfKin
+            from app.models.contribution import Contribution, Receipt
             from app.models.loan import Loan, LoanRepayment
-            from app.models.welfare import WelfareRequest
-            from app.models.meeting import Meeting, MeetingAttendance
+            from app.models.welfare import WelfareRequest, WelfarePayment
+            from app.models.meeting import Meeting, Attendance, Minutes, ActionItem
             from app.models.expense import Expense
             from app.models.notification import Notification
+            from app.models.audit import AuditLog
+            from app.models.system import SystemSetting
 
             try:
                 # Get super admin before deletion
@@ -222,52 +223,72 @@ def register_commands(app):
                 # Delete in order to respect foreign key constraints
                 deleted_counts = {}
 
-                # 1. Delete notifications
+                # 1. Delete audit logs
+                count = AuditLog.query.delete()
+                deleted_counts['Audit Logs'] = count
+                click.echo(f'  - Deleted {count} audit logs')
+
+                # 2. Delete notifications
                 count = Notification.query.delete()
                 deleted_counts['Notifications'] = count
                 click.echo(f'  - Deleted {count} notifications')
 
-                # 2. Delete meeting attendance
-                count = MeetingAttendance.query.delete()
+                # 3. Delete action items
+                count = ActionItem.query.delete()
+                deleted_counts['Action Items'] = count
+                click.echo(f'  - Deleted {count} action items')
+
+                # 4. Delete meeting minutes
+                count = Minutes.query.delete()
+                deleted_counts['Minutes'] = count
+                click.echo(f'  - Deleted {count} meeting minutes')
+
+                # 5. Delete meeting attendance
+                count = Attendance.query.delete()
                 deleted_counts['Meeting Attendance'] = count
                 click.echo(f'  - Deleted {count} meeting attendance records')
 
-                # 3. Delete meetings
+                # 6. Delete meetings
                 count = Meeting.query.delete()
                 deleted_counts['Meetings'] = count
                 click.echo(f'  - Deleted {count} meetings')
 
-                # 4. Delete expenses
+                # 7. Delete expenses
                 count = Expense.query.delete()
                 deleted_counts['Expenses'] = count
                 click.echo(f'  - Deleted {count} expenses')
 
-                # 5. Delete loan repayments
+                # 8. Delete loan repayments
                 count = LoanRepayment.query.delete()
                 deleted_counts['Loan Repayments'] = count
                 click.echo(f'  - Deleted {count} loan repayments')
 
-                # 6. Delete loans
+                # 9. Delete loans
                 count = Loan.query.delete()
                 deleted_counts['Loans'] = count
                 click.echo(f'  - Deleted {count} loans')
 
-                # 7. Delete welfare requests
+                # 10. Delete welfare payments
+                count = WelfarePayment.query.delete()
+                deleted_counts['Welfare Payments'] = count
+                click.echo(f'  - Deleted {count} welfare payments')
+
+                # 11. Delete welfare requests
                 count = WelfareRequest.query.delete()
                 deleted_counts['Welfare Requests'] = count
                 click.echo(f'  - Deleted {count} welfare requests')
 
-                # 8. Delete membership fees
-                count = MembershipFee.query.delete()
-                deleted_counts['Membership Fees'] = count
-                click.echo(f'  - Deleted {count} membership fees')
+                # 12. Delete receipts
+                count = Receipt.query.delete()
+                deleted_counts['Receipts'] = count
+                click.echo(f'  - Deleted {count} receipts')
 
-                # 9. Delete contributions
+                # 13. Delete contributions
                 count = Contribution.query.delete()
                 deleted_counts['Contributions'] = count
                 click.echo(f'  - Deleted {count} contributions')
 
-                # 10. Delete users (except super admin)
+                # 14. Delete users (except super admin)
                 if keep_admin and super_admin_user:
                     count = User.query.filter(User.id != super_admin_user.id).delete()
                 else:
@@ -275,10 +296,9 @@ def register_commands(app):
                 deleted_counts['Users'] = count
                 click.echo(f'  - Deleted {count} users')
 
-                # 11. Delete members (except super admin's member)
+                # 15. Delete members (except super admin's member)
                 if keep_admin and super_admin_member_id:
                     # First, delete next of kin for non-admin members
-                    from app.models.member import NextOfKin
                     count = NextOfKin.query.filter(NextOfKin.member_id != super_admin_member_id).delete()
                     deleted_counts['Next of Kin'] = count
                     click.echo(f'  - Deleted {count} next of kin records')
@@ -293,9 +313,9 @@ def register_commands(app):
                         admin_member.consecutive_months_paid = 0
                         admin_member.last_contribution_date = None
                         admin_member.qualified_for_benefits = False
+                        admin_member.membership_fee_paid = True  # Keep membership fee as paid
                         click.echo(f'  - Reset admin member stats: {admin_member.full_name}')
                 else:
-                    from app.models.member import NextOfKin
                     count_kin = NextOfKin.query.delete()
                     deleted_counts['Next of Kin'] = count_kin
                     click.echo(f'  - Deleted {count_kin} next of kin records')
