@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Meetings - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-calendar-event"></i> Meetings</h2>
+        {% if current_user.is_executive() or current_user.is_super_admin() %}
+        <a href="{{ url_for('meetings.schedule_meeting') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Schedule Meeting
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Meetings</h5>
+                    <h3>{{ total_meetings }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Upcoming Meetings</h5>
+                    <h3>{{ upcoming_meetings }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="type" class="form-label">Meeting Type</label>
+                    <select class="form-select" id="type" name="type">
+                        <option value="">All Types</option>
+                        <option value="Regular" {% if type_filter == 'Regular' %}selected{% endif %}>Regular</option>
+                        <option value="Emergency" {% if type_filter == 'Emergency' %}selected{% endif %}>Emergency</option>
+                        <option value="AnnualGeneral" {% if type_filter == 'AnnualGeneral' %}selected{% endif %}>Annual General</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="Scheduled" {% if status_filter == 'Scheduled' %}selected{% endif %}>Scheduled</option>
+                        <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Cancelled" {% if status_filter == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                    <a href="{{ url_for('meetings.list_meetings') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Meetings List -->
+    <div class="card">
+        <div class="card-header">
+            <h5>All Meetings</h5>
+        </div>
+        <div class="card-body">
+            {% if meetings %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Venue</th>
+                            <th>Attendance</th>
+                            <th>Quorum</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for meeting in meetings %}
+                        <tr>
+                            <td>{{ meeting.meeting_date.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ meeting.meeting_time.strftime('%H:%M') }}</td>
+                            <td>
+                                <span class="badge bg-info">{{ meeting.meeting_type }}</span>
+                            </td>
+                            <td>{{ meeting.venue }}</td>
+                            <td>
+                                {% if meeting.total_attendance %}
+                                {{ meeting.total_attendance }} members
+                                {% else %}
+                                <span class="text-muted">Not recorded</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if meeting.quorum_met == True %}
+                                <span class="badge bg-success">Met</span>
+                                {% elif meeting.quorum_met == False %}
+                                <span class="badge bg-danger">Not Met</span>
+                                {% else %}
+                                <span class="badge bg-secondary">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge
+                                    {% if meeting.status == 'Scheduled' %}bg-primary
+                                    {% elif meeting.status == 'Completed' %}bg-success
+                                    {% elif meeting.status == 'Cancelled' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ meeting.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('meetings.view_meeting', id=meeting.id) }}"
+                                   class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info" role="alert">
+                <i class="bi bi-info-circle"></i> No meetings found.
+                {% if current_user.is_executive() or current_user.is_super_admin() %}
+                <a href="{{ url_for('meetings.schedule_meeting') }}">Schedule the first meeting</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

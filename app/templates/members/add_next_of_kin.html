@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Add Next of Kin - Old Timers Savings Group{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-person-plus"></i> Add Next of Kin</h4>
+                    <small>For {{ member.full_name }} ({{ member.member_number }})</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('members.add_next_of_kin', id=member.id) }}">
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label">Full Name *</label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="relationship" class="form-label">Relationship *</label>
+                            <select class="form-select" id="relationship" name="relationship" required>
+                                <option value="">Select Relationship</option>
+                                <option value="Spouse">Spouse</option>
+                                <option value="Child">Child</option>
+                                <option value="Parent">Parent</option>
+                                <option value="Sibling">Sibling</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Phone Number *</label>
+                            <input type="tel" class="form-control" id="phone" name="phone"
+                                   placeholder="0700000000" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   placeholder="email@example.com">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="physical_address" class="form-label">Physical Address</label>
+                            <textarea class="form-control" id="physical_address" name="physical_address"
+                                      rows="2"></textarea>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_primary" name="is_primary">
+                            <label class="form-check-label" for="is_primary">
+                                Set as primary next of kin
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Add Next of Kin
+                            </button>
+                            <a href="{{ url_for('members.view_member', id=member.id) }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

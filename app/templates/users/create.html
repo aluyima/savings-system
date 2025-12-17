@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Create User - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-person-plus"></i> Create New User Account</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('users.create_user') }}">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username *</label>
+                            <input type="text" class="form-control" id="username" name="username" required
+                                   placeholder="Enter username">
+                            <div class="form-text">Username will be used for login. Must be unique.</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Password *</label>
+                                    <input type="password" class="form-control" id="password" name="password" required
+                                           minlength="8" placeholder="Enter password">
+                                    <div class="form-text">Minimum 8 characters</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label">Confirm Password *</label>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required
+                                           minlength="8" placeholder="Confirm password">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Role *</label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="">Select role...</option>
+                                <option value="SuperAdmin">Super Admin (Full Access)</option>
+                                <option value="Executive">Executive (Chairman/Secretary/Treasurer)</option>
+                                <option value="Auditor">Auditor (Read-Only Access)</option>
+                                <option value="Member">Member (Limited Access)</option>
+                            </select>
+                            <div class="form-text">
+                                <strong>Role Permissions:</strong>
+                                <ul class="mb-0 mt-1">
+                                    <li><strong>SuperAdmin:</strong> Full system access, user management</li>
+                                    <li><strong>Executive:</strong> Member management, financial operations</li>
+                                    <li><strong>Auditor:</strong> View-only access to all records</li>
+                                    <li><strong>Member:</strong> View own records only</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="member_id" class="form-label">Link to Member (Optional)</label>
+                            <select class="form-select" id="member_id" name="member_id">
+                                <option value="">None - System Account</option>
+                                {% for member in members %}
+                                <option value="{{ member.id }}">{{ member.member_number }} - {{ member.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Link this user account to a member record. Required for Member role.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> <strong>Note:</strong>
+                            User will be required to change their password on first login.
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('users.list_users') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Create User
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

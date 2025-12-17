@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Contributions Report - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-cash-coin"></i> Contributions Report</h2>
+        <a href="{{ url_for('reports.reports_index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Reports
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-5">
+                    <label for="year" class="form-label">Year</label>
+                    <select class="form-select" id="year" name="year">
+                        {% for y in range(2020, 2031) %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label for="month" class="form-label">Month (Optional)</label>
+                    <select class="form-select" id="month" name="month">
+                        <option value="">All Months</option>
+                        {% for m in range(1, 13) %}
+                        <option value="{{ m }}" {% if m == month %}selected{% endif %}>
+                            {{ ['January', 'February', 'March', 'April', 'May', 'June',
+                                'July', 'August', 'September', 'October', 'November', 'December'][m-1] }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h6>Expected</h6>
+                    <h4>{{ format_currency(total_expected) }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h6>Received</h6>
+                    <h4>{{ format_currency(total_received) }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h6>Outstanding</h6>
+                    <h4>{{ format_currency(total_outstanding) }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h6>Collection Rate</h6>
+                    <h4>{{ "%.1f"|format(collection_rate) }}%</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contributions by Member -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Contributions by Member</h5>
+        </div>
+        <div class="card-body">
+            {% if member_contributions %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Number of Payments</th>
+                            <th>Total Contributed</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member_id, data in member_contributions.items() %}
+                        <tr>
+                            <td>{{ data.member.member_number }} - {{ data.member.full_name }}</td>
+                            <td>{{ data.contributions|length }}</td>
+                            <td>{{ format_currency(data.total) }}</td>
+                            <td>
+                                <a href="{{ url_for('reports.member_statement', member_id=member_id) }}"
+                                   class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> View Statement
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No contributions found for the selected period.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Contributions - Okwezimba Twegatte SACCO{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-cash-coin"></i> Contributions Management</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('contributions.add_contribution') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Record Contribution
+            </a>
+            <a href="{{ url_for('contributions.batch_contributions') }}" class="btn btn-success">
+                <i class="bi bi-files"></i> Batch Process
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Contributions</h5>
+                    <h3>{{ total_contributions }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Amount</h5>
+                    <h3>UGX {{ "{:,.2f}".format(total_amount) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Actions</h5>
+                    <a href="{{ url_for('contributions.contributions_summary') }}" class="btn btn-light btn-sm">
+                        <i class="bi bi-graph-up"></i> View Summary
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('contributions.list_contributions') }}" class="row g-3">
+                <div class="col-md-3">
+                    <label for="month" class="form-label">Contribution Month</label>
+                    <input type="month" class="form-control" id="month" name="month" value="{{ month }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="member_number" class="form-label">Member Number</label>
+                    <input type="text" class="form-control" id="member_number" name="member_number"
+                           value="{{ member_number }}" placeholder="OT-001">
+                </div>
+                <div class="col-md-3">
+                    <label for="payment_method" class="form-label">Payment Method</label>
+                    <select class="form-select" id="payment_method" name="payment_method">
+                        <option value="">All Methods</option>
+                        <option value="CashDeposit" {% if payment_method == 'CashDeposit' %}selected{% endif %}>Cash Deposit</option>
+                        <option value="AgencyBanking" {% if payment_method == 'AgencyBanking' %}selected{% endif %}>Agency Banking</option>
+                        <option value="EFT" {% if payment_method == 'EFT' %}selected{% endif %}>EFT</option>
+                        <option value="MobileMoney" {% if payment_method == 'MobileMoney' %}selected{% endif %}>Mobile Money</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                    <a href="{{ url_for('contributions.list_contributions') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contributions Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if contributions.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Receipt No.</th>
+                            <th>Member</th>
+                            <th>Month</th>
+                            <th>Amount</th>
+                            <th>Payment Date</th>
+                            <th>Method</th>
+                            <th>Recorded By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contribution in contributions.items %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('contributions.view_contribution', id=contribution.id) }}">
+                                    {{ contribution.receipt_number }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('members.view_member', id=contribution.member.id) }}">
+                                    {{ contribution.member.member_number }} - {{ contribution.member.full_name }}
+                                </a>
+                            </td>
+                            <td>{{ contribution.contribution_month }}</td>
+                            <td><strong>UGX {{ "{:,.2f}".format(contribution.amount) }}</strong></td>
+                            <td>{{ contribution.payment_date.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% if contribution.payment_method == 'CashDeposit' %}
+                                <span class="badge bg-warning">Cash Deposit</span>
+                                {% elif contribution.payment_method == 'AgencyBanking' %}
+                                <span class="badge bg-success">Agency Banking</span>
+                                {% elif contribution.payment_method == 'EFT' %}
+                                <span class="badge bg-primary">EFT</span>
+                                {% elif contribution.payment_method == 'MobileMoney' %}
+                                <span class="badge bg-info">Mobile Money</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ contribution.recorder.full_name }}</td>
+                            <td>
+                                <a href="{{ url_for('contributions.view_contribution', id=contribution.id) }}"
+                                   class="btn btn-sm btn-info" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('contributions.generate_receipt', id=contribution.id) }}"
+                                   class="btn btn-sm btn-success" title="Download Receipt">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <a href="{{ url_for('contributions.edit_contribution', id=contribution.id) }}"
+                                   class="btn btn-sm btn-warning" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if contributions.pages > 1 %}
+            <nav aria-label="Contributions pagination">
+                <ul class="pagination justify-content-center">
+                    {% if contributions.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('contributions.list_contributions', page=contributions.prev_num, month=month, member_number=member_number, payment_method=payment_method) }}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for page_num in contributions.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == contributions.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('contributions.list_contributions', page=page_num, month=month, member_number=member_number, payment_method=payment_method) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if contributions.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('contributions.list_contributions', page=contributions.next_num, month=month, member_number=member_number, payment_method=payment_method) }}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No contributions found.
+                <a href="{{ url_for('contributions.add_contribution') }}">Record a contribution</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

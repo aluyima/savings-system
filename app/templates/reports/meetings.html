@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Meetings Report - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-calendar-event"></i> Meetings Report</h2>
+        <a href="{{ url_for('reports.reports_index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Reports
+        </a>
+    </div>
+
+    <!-- Year Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-10">
+                    <label for="year" class="form-label">Year</label>
+                    <select class="form-select" id="year" name="year">
+                        {% for y in range(2020, 2031) %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h6>Total Meetings</h6>
+                    <h4>{{ total_meetings }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h6>Completed</h6>
+                    <h4>{{ completed_count }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h6>Scheduled</h6>
+                    <h4>{{ scheduled_count }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h6>Cancelled</h6>
+                    <h4>{{ cancelled_count }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quorum Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6>Quorum Met</h6>
+                    <h3 class="text-success">{{ quorum_met_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6>Quorum Not Met</h6>
+                    <h3 class="text-danger">{{ quorum_not_met_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6>Average Attendance</h6>
+                    <h3 class="text-info">{{ "%.1f"|format(avg_attendance) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Meetings List -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Meetings for {{ year }}</h5>
+        </div>
+        <div class="card-body">
+            {% if meetings %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Venue</th>
+                            <th>Attendance</th>
+                            <th>Quorum</th>
+                            <th>Status</th>
+                            <th>Minutes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for meeting in meetings %}
+                        <tr>
+                            <td>{{ meeting.meeting_date.strftime('%d/%m/%Y') }}</td>
+                            <td><span class="badge bg-info">{{ meeting.meeting_type }}</span></td>
+                            <td>{{ meeting.venue }}</td>
+                            <td>{{ meeting.total_attendance or 'N/A' }}</td>
+                            <td>
+                                {% if meeting.quorum_met == True %}
+                                <span class="badge bg-success">Met</span>
+                                {% elif meeting.quorum_met == False %}
+                                <span class="badge bg-danger">Not Met</span>
+                                {% else %}
+                                <span class="badge bg-secondary">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if meeting.status == 'Completed' else 'warning' if meeting.status == 'Scheduled' else 'danger' }}">
+                                    {{ meeting.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if meeting.minutes %}
+                                <i class="bi bi-check-circle text-success"></i>
+                                {% else %}
+                                <i class="bi bi-x-circle text-muted"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('meetings.view_meeting', id=meeting.id) }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No meetings found for {{ year }}.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

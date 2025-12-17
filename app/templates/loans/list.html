@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Loans - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-bank"></i> Loans Management</h2>
+        <a href="{{ url_for('loans.apply') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Apply for Loan
+        </a>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Disbursed</h5>
+                    <h3>{{ format_currency(total_disbursed) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Outstanding Balance</h5>
+                    <h3>{{ format_currency(total_outstanding) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Active Loans</h5>
+                    <h3>{{ active_loans_count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('loans.list_loans') }}" class="row g-3">
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="Approved" {% if status_filter == 'Approved' %}selected{% endif %}>Approved</option>
+                        <option value="Disbursed" {% if status_filter == 'Disbursed' %}selected{% endif %}>Disbursed</option>
+                        <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+                        <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Rejected" {% if status_filter == 'Rejected' %}selected{% endif %}>Rejected</option>
+                        <option value="Defaulted" {% if status_filter == 'Defaulted' %}selected{% endif %}>Defaulted</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="member" class="form-label">Member Number</label>
+                    <input type="text" class="form-control" id="member" name="member" value="{{ member_filter }}" placeholder="Search by member number">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                    <a href="{{ url_for('loans.list_loans') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loans Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Loans List</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Loan Number</th>
+                            <th>Member</th>
+                            <th>Amount Requested</th>
+                            <th>Amount Approved</th>
+                            <th>Balance</th>
+                            <th>Status</th>
+                            <th>Application Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in loans %}
+                        <tr>
+                            <td><strong>{{ loan.loan_number }}</strong></td>
+                            <td>{{ loan.member.member_number }} - {{ loan.member.full_name }}</td>
+                            <td>{{ format_currency(loan.amount_requested) }}</td>
+                            <td>
+                                {% if loan.amount_approved %}
+                                {{ format_currency(loan.amount_approved) }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if loan.balance %}
+                                {{ format_currency(loan.balance) }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge
+                                    {% if loan.status == 'Pending' %}bg-warning
+                                    {% elif loan.status == 'Approved' %}bg-info
+                                    {% elif loan.status == 'Active' %}bg-primary
+                                    {% elif loan.status == 'Completed' %}bg-success
+                                    {% elif loan.status == 'Rejected' %}bg-danger
+                                    {% elif loan.status == 'Defaulted' %}bg-dark
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ loan.status }}
+                                </span>
+                            </td>
+                            <td>{{ loan.created_at.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <a href="{{ url_for('loans.view_loan', id=loan.id) }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center">No loans found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

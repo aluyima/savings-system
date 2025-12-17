@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Unpaid Membership Fees - Okwezimba Twegatte SACCO{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-exclamation-triangle text-warning"></i> Members with Unpaid Membership Fees</h2>
+            <p class="text-muted">Membership fee: UGX {{ "{:,.0f}".format(membership_fee) }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('membership_fees.list_members') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to All Members
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if members.items %}
+            <div class="alert alert-warning">
+                <i class="bi bi-info-circle"></i>
+                <strong>{{ members.total }} member(s)</strong> have not paid the membership fee.
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Member Number</th>
+                            <th>Full Name</th>
+                            <th>Date Joined</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in members.items %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('members.view_member', id=member.id) }}">
+                                    {{ member.member_number }}
+                                </a>
+                            </td>
+                            <td>{{ member.full_name }}</td>
+                            <td>{{ member.date_joined.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ member.phone_primary }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if member.status == 'Active' else 'secondary' }}">
+                                    {{ member.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('membership_fees.record_payment', member_id=member.id) }}"
+                                   class="btn btn-sm btn-success">
+                                    <i class="bi bi-cash"></i> Record Payment
+                                </a>
+                                <a href="{{ url_for('members.view_member', id=member.id) }}"
+                                   class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> View Profile
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if members.pages > 1 %}
+            <nav aria-label="Members pagination">
+                <ul class="pagination justify-content-center">
+                    {% if members.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('membership_fees.unpaid_members', page=members.prev_num) }}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for page_num in members.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == members.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('membership_fees.unpaid_members', page=page_num) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if members.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('membership_fees.unpaid_members', page=members.next_num) }}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="alert alert-success">
+                <i class="bi bi-check-circle"></i>
+                <strong>Great!</strong> All members have paid their membership fees.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

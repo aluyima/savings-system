@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Member Statement - {{ member.full_name }} - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-person-badge"></i> Member Statement</h2>
+        <a href="{{ url_for('members.view_member', id=member.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Member
+        </a>
+    </div>
+
+    <!-- Member Info -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5>{{ member.full_name }} ({{ member.member_number }})</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Status:</strong>
+                    <span class="badge bg-{{ 'success' if member.status == 'Active' else 'secondary' }}">
+                        {{ member.status }}
+                    </span>
+                </div>
+                <div class="col-md-4">
+                    <strong>Join Date:</strong> {{ member.date_joined.strftime('%d/%m/%Y') }}
+                </div>
+                <div class="col-md-4">
+                    <strong>Phone:</strong> {{ member.phone_primary }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-5">
+                    <label for="start_date" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date"
+                           value="{{ start_date.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="col-md-5">
+                    <label for="end_date" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date"
+                           value="{{ end_date.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h6>Membership Fee</h6>
+                    <h4>{{ format_currency(membership_fee.amount if membership_fee else 0) }}</h4>
+                    {% if membership_fee %}
+                    <small><i class="bi bi-check-circle"></i> Paid</small>
+                    {% else %}
+                    <small><i class="bi bi-x-circle"></i> Unpaid</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h6>Total Contributions</h6>
+                    <h4>{{ format_currency(contributions_total) }}</h4>
+                    <small>{{ contributions|length }} payments</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h6>Loans Balance</h6>
+                    <h4>{{ format_currency(loans_balance) }}</h4>
+                    <small>{{ loans|length }} loan(s)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h6>Welfare Received</h6>
+                    <h4>{{ format_currency(welfare_total) }}</h4>
+                    <small>{{ welfare_requests|length }} request(s)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contributions -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="bi bi-cash-coin"></i> Contributions</h5>
+        </div>
+        <div class="card-body">
+            {% if contributions %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Receipt No.</th>
+                            <th>Month</th>
+                            <th>Payment Date</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contrib in contributions %}
+                        <tr>
+                            <td>{{ contrib.receipt_number }}</td>
+                            <td>
+                                {% set year = contrib.contribution_month.split('-')[0] %}
+                                {% set month_num = contrib.contribution_month.split('-')[1] %}
+                                {% set months = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                                {{ months[month_num|int] }} {{ year }}
+                            </td>
+                            <td>{{ contrib.payment_date.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ format_currency(contrib.amount) }}</td>
+                            <td>{{ contrib.payment_method }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No contributions in selected period.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Loans -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="bi bi-bank"></i> Loans</h5>
+        </div>
+        <div class="card-body">
+            {% if loans %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Loan No.</th>
+                            <th>Amount</th>
+                            <th>Interest</th>
+                            <th>Total Payable</th>
+                            <th>Repaid</th>
+                            <th>Balance</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in loans %}
+                        <tr>
+                            <td><a href="{{ url_for('loans.view_loan', id=loan.id) }}">{{ loan.loan_number }}</a></td>
+                            <td>{{ format_currency(loan.amount_approved) }}</td>
+                            <td>{{ loan.interest_rate }}% pm</td>
+                            <td>{{ format_currency(loan.total_payable) }}</td>
+                            <td>{{ format_currency(loan.total_paid) }}</td>
+                            <td>{{ format_currency(loan.balance) }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if loan.status == 'FullyRepaid' else 'warning' if loan.status == 'Active' else 'secondary' }}">
+                                    {{ loan.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No loans recorded.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Welfare -->
+    {% if welfare_requests %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="bi bi-heart"></i> Welfare Requests</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Request Date</th>
+                            <th>Type</th>
+                            <th>Amount Approved</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for welfare in welfare_requests %}
+                        <tr>
+                            <td>{{ welfare.created_at.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ welfare.request_type }}</td>
+                            <td>{{ format_currency(welfare.amount_approved or 0) }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if welfare.status == 'Approved' else 'warning' if welfare.status == 'Pending' else 'danger' }}">
+                                    {{ welfare.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

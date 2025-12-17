@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule Meeting - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-calendar-plus"></i> Schedule New Meeting</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('meetings.schedule_meeting') }}">
+                        <div class="mb-3">
+                            <label for="meeting_type" class="form-label">Meeting Type *</label>
+                            <select class="form-select" id="meeting_type" name="meeting_type" required>
+                                <option value="">Select type...</option>
+                                <option value="Regular">Regular Meeting</option>
+                                <option value="Emergency">Emergency Meeting</option>
+                                <option value="AnnualGeneral">Annual General Meeting</option>
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="meeting_date" class="form-label">Meeting Date *</label>
+                                    <input type="date" class="form-control" id="meeting_date" name="meeting_date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="meeting_time" class="form-label">Meeting Time *</label>
+                                    <input type="time" class="form-control" id="meeting_time" name="meeting_time" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="venue" class="form-label">Venue *</label>
+                            <input type="text" class="form-control" id="venue" name="venue" required
+                                   placeholder="Enter meeting venue">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="agenda" class="form-label">Agenda *</label>
+                            <textarea class="form-control" id="agenda" name="agenda" rows="6" required
+                                      placeholder="Enter meeting agenda (use bullet points or numbering)"></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('meetings.list_meetings') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Schedule Meeting
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

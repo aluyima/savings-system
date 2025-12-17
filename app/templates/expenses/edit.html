@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Expense - {{ expense.expense_number }} - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h4><i class="bi bi-pencil"></i> Edit Expense - {{ expense.expense_number }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('expenses.edit_expense', id=expense.id) }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="expense_category" class="form-label">Category *</label>
+                                    <select class="form-select" id="expense_category" name="expense_category" required>
+                                        {% for category in categories %}
+                                        <option value="{{ category }}" {% if expense.expense_category == category %}selected{% endif %}>
+                                            {{ category }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="expense_date" class="form-label">Expense Date *</label>
+                                    <input type="date" class="form-control" id="expense_date" name="expense_date"
+                                           value="{{ expense.expense_date.strftime('%Y-%m-%d') }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description *</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" required>{{ expense.description }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="amount" class="form-label">Amount (UGX) *</label>
+                                    <input type="number" class="form-control" id="amount" name="amount"
+                                           step="0.01" min="0" value="{{ expense.amount }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="payee" class="form-label">Payee *</label>
+                                    <input type="text" class="form-control" id="payee" name="payee"
+                                           value="{{ expense.payee }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="payment_method" class="form-label">Payment Method</label>
+                                    <select class="form-select" id="payment_method" name="payment_method">
+                                        <option value="Cash" {% if expense.payment_method == 'Cash' %}selected{% endif %}>Cash</option>
+                                        <option value="Mobile Money" {% if expense.payment_method == 'Mobile Money' %}selected{% endif %}>Mobile Money</option>
+                                        <option value="Bank Transfer" {% if expense.payment_method == 'Bank Transfer' %}selected{% endif %}>Bank Transfer</option>
+                                        <option value="Cheque" {% if expense.payment_method == 'Cheque' %}selected{% endif %}>Cheque</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="reference_number" class="form-label">Reference Number</label>
+                                    <input type="text" class="form-control" id="reference_number" name="reference_number"
+                                           value="{{ expense.reference_number or '' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2">{{ expense.notes or '' }}</textarea>
+                        </div>
+
+                        {% if expense.receipt_document_path %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-paperclip"></i> Current receipt:
+                            <a href="{{ url_for('static', filename='uploads/' + expense.receipt_document_path) }}" target="_blank">
+                                View Document
+                            </a>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('expenses.view_expense', id=expense.id) }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-check-circle"></i> Update Expense
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

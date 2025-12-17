@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Record Payment - {{ welfare_request.request_number }} - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-cash-stack"></i> Record Welfare Payment</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Request Summary -->
+                    <div class="alert alert-info">
+                        <h5>{{ welfare_request.request_number }} - {{ welfare_request.request_type }}</h5>
+                        <p class="mb-0">
+                            <strong>Member:</strong> {{ welfare_request.member.full_name }} ({{ welfare_request.member.member_number }})<br>
+                            <strong>Affected Person:</strong> {{ welfare_request.affected_person }}<br>
+                            <strong>Approved Amount:</strong> UGX {{ "{:,.0f}".format(welfare_request.amount_approved) }}
+                        </p>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('welfare.record_payment', id=welfare_request.id) }}" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="amount_paid" class="form-label">Amount Paid (UGX) *</label>
+                            <input type="number" class="form-control" id="amount_paid" name="amount_paid"
+                                   value="{{ welfare_request.amount_approved }}" step="1000" min="1000" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_date" class="form-label">Payment Date *</label>
+                            <input type="date" class="form-control" id="payment_date" name="payment_date" required>
+                        </div>
+
+                        <hr>
+                        <h5>Bank Withdrawal Details</h5>
+
+                        <div class="mb-3">
+                            <label for="payment_method" class="form-label">Payment Method</label>
+                            <input type="text" class="form-control" id="payment_method" name="payment_method"
+                                   value="Cash Withdrawal from Bank Account" readonly>
+                            <div class="form-text">All welfare payments are made via cash withdrawal from the group's bank account</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="withdrawal_reference" class="form-label">Bank Withdrawal Reference *</label>
+                            <input type="text" class="form-control" id="withdrawal_reference" name="withdrawal_reference"
+                                   required placeholder="Enter bank withdrawal reference number">
+                            <div class="form-text">Reference number from the bank withdrawal slip</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="withdrawal_document" class="form-label">Upload Withdrawal Document *</label>
+                            <input type="file" class="form-control" id="withdrawal_document" name="withdrawal_document"
+                                   accept=".pdf,.jpg,.jpeg,.png" required>
+                            <div class="form-text">Upload the bank withdrawal slip or receipt (PDF, JPG, or PNG)</div>
+                        </div>
+
+                        <hr>
+                        <h5>Beneficiary Information</h5>
+
+                        <div class="mb-3">
+                            <label for="beneficiary_name" class="form-label">Beneficiary Name *</label>
+                            <input type="text" class="form-control" id="beneficiary_name" name="beneficiary_name"
+                                   value="{{ welfare_request.affected_person }}" required
+                                   placeholder="Name of person receiving payment">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="beneficiary_phone" class="form-label">Beneficiary Phone</label>
+                            <input type="tel" class="form-control" id="beneficiary_phone" name="beneficiary_phone"
+                                   placeholder="+256XXXXXXXXX">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="beneficiary_receipt" class="form-label">Beneficiary Proof of Receipt *</label>
+                            <input type="file" class="form-control" id="beneficiary_receipt" name="beneficiary_receipt"
+                                   accept=".pdf,.jpg,.jpeg,.png" required>
+                            <div class="form-text">Upload proof that beneficiary received funds (signed receipt, acknowledgment, photo, etc.)</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2"
+                                      placeholder="Any additional notes about this payment"></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('welfare.view_request', id=welfare_request.id) }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Record Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="bi bi-info-circle"></i> Payment Information</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>A payment voucher will be automatically generated</li>
+                        <li>Funds must be withdrawn from the bank account - upload withdrawal slip</li>
+                        <li>Beneficiary must provide proof of receipt (signed acknowledgment, photo, etc.)</li>
+                        <li>Keep all documents for audit trail</li>
+                        <li>Ensure payment is made to the correct beneficiary</li>
+                        <li>Request status will change to "Paid" after recording</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today as default payment date
+    const dateInput = document.getElementById('payment_date');
+    if (dateInput && !dateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+});
+</script>
+{% endblock %}

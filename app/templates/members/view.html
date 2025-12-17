@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}{{ member.full_name }} - Old Timers Savings Group{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-person"></i> {{ member.full_name }}</h2>
+        <div>
+            {% if not current_user.is_auditor() %}
+            <a href="{{ url_for('members.edit_member', id=member.id) }}" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Edit
+            </a>
+            {% endif %}
+            {% if current_user.is_executive() or current_user.is_super_admin() or current_user.is_auditor() %}
+            <a href="{{ url_for('members.list_members') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+            {% else %}
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Personal Info -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <strong>Personal Information</strong>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="40%">Member Number:</th>
+                            <td><strong>{{ member.member_number }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Full Name:</th>
+                            <td>{{ member.full_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>National ID:</th>
+                            <td>{{ member.national_id or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date of Birth:</th>
+                            <td>{{ member.date_of_birth|format_date if member.date_of_birth else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Gender:</th>
+                            <td>{{ member.gender }}</td>
+                        </tr>
+                        <tr>
+                            <th>Occupation:</th>
+                            <td>{{ member.occupation or 'N/A' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <strong>Contact Information</strong>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="40%">Primary Phone:</th>
+                            <td>{{ member.phone_primary }}</td>
+                        </tr>
+                        <tr>
+                            <th>Secondary Phone:</th>
+                            <td>{{ member.phone_secondary or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Email:</th>
+                            <td>{{ member.email or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Address:</th>
+                            <td>{{ member.physical_address or 'N/A' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Membership Info -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <strong>Membership Status</strong>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="40%">Status:</th>
+                            <td>
+                                <span class="badge
+                                    {% if member.status == 'Active' %}bg-success
+                                    {% elif member.status == 'Suspended' %}bg-warning
+                                    {% elif member.status == 'Expelled' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ member.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Date Joined:</th>
+                            <td>{{ member.date_joined|format_date }}</td>
+                        </tr>
+                        <tr>
+                            <th>Total Contributed:</th>
+                            <td><strong>{{ member.total_contributed|format_currency }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Consecutive Months:</th>
+                            <td>{{ member.consecutive_months_paid }} months</td>
+                        </tr>
+                        <tr>
+                            <th>Qualified for Benefits:</th>
+                            <td>
+                                {% if member.qualified_for_benefits %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Yes</span>
+                                {% else %}
+                                <span class="badge bg-secondary"><i class="bi bi-x-circle"></i> No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th colspan="2" class="text-center">
+                                <a href="{{ url_for('reports.member_statement', member_id=member.id) }}"
+                                   class="btn btn-primary btn-sm w-100">
+                                    <i class="bi bi-file-text"></i> View Full Statement
+                                </a>
+                            </th>
+                        </tr>
+                    </table>
+
+                    {% if current_user.is_executive() or current_user.is_super_admin() %}
+                    <hr>
+                    <div class="d-grid gap-2">
+                        {% if member.status == 'Active' %}
+                        <form method="POST" action="{{ url_for('members.suspend_member', id=member.id) }}"
+                              onsubmit="return confirm('Are you sure you want to suspend this member?');">
+                            <button type="submit" class="btn btn-warning w-100">
+                                <i class="bi bi-pause-circle"></i> Suspend Member
+                            </button>
+                        </form>
+                        {% elif member.status == 'Suspended' %}
+                        <form method="POST" action="{{ url_for('members.reactivate_member', id=member.id) }}">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-play-circle"></i> Reactivate Member
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if user_account %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <strong>User Account</strong>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="40%">Username:</th>
+                            <td>{{ user_account.username }}</td>
+                        </tr>
+                        <tr>
+                            <th>Role:</th>
+                            <td><span class="badge bg-primary">{{ user_account.role }}</span></td>
+                        </tr>
+                        <tr>
+                            <th>Account Status:</th>
+                            <td>
+                                {% if user_account.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Last Login:</th>
+                            <td>{{ user_account.last_login|format_datetime if user_account.last_login else 'Never' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Next of Kin Section -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>Next of Kin</strong>
+            {% if current_user.is_executive() or current_user.is_super_admin() %}
+            <a href="{{ url_for('members.add_next_of_kin', id=member.id) }}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Next of Kin
+            </a>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if next_of_kin %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Relationship</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Primary</th>
+                            {% if current_user.is_executive() or current_user.is_super_admin() %}
+                            <th>Actions</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for nok in next_of_kin %}
+                        <tr>
+                            <td>{{ nok.full_name }}</td>
+                            <td>{{ nok.relationship }}</td>
+                            <td>{{ nok.phone_primary }}</td>
+                            <td>{{ nok.email or 'N/A' }}</td>
+                            <td>
+                                {% if nok.kin_type == 'Primary' %}
+                                <span class="badge bg-success">Primary</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Alternative</span>
+                                {% endif %}
+                            </td>
+                            {% if current_user.is_executive() or current_user.is_super_admin() %}
+                            <td>
+                                <form method="POST"
+                                      action="{{ url_for('members.delete_next_of_kin', member_id=member.id, nok_id=nok.id) }}"
+                                      onsubmit="return confirm('Are you sure you want to remove this next of kin?');"
+                                      class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No next of kin added yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Contributions -->
+    {% if contributions %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Recent Contributions</strong>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Receipt No</th>
+                            <th>Amount</th>
+                            <th>Month</th>
+                            <th>Payment Date</th>
+                            <th>Method</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contribution in contributions %}
+                        <tr>
+                            <td>{{ contribution.receipt_number }}</td>
+                            <td>{{ contribution.amount|format_currency }}</td>
+                            <td>{{ contribution.contribution_month }}</td>
+                            <td>{{ contribution.payment_date|format_date }}</td>
+                            <td><span class="badge bg-info">{{ contribution.payment_method }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Active Loans -->
+    {% if active_loans %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Active Loans</strong>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Loan No</th>
+                            <th>Amount</th>
+                            <th>Total Payable</th>
+                            <th>Balance</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in active_loans %}
+                        <tr>
+                            <td>{{ loan.loan_number }}</td>
+                            <td>{{ loan.amount_approved|format_currency }}</td>
+                            <td>{{ loan.total_payable|format_currency }}</td>
+                            <td>{{ loan.balance|format_currency }}</td>
+                            <td><span class="badge bg-warning">{{ loan.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

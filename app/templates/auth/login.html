@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Old Timers Savings Group{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-5">
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-piggy-bank" style="font-size: 4rem; color: var(--primary-color);"></i>
+                        <h2 class="mt-3 mb-0">Old Timers Savings</h2>
+                        <p class="text-muted">Digital Records Management System</p>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('auth.login') }}">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">
+                                <i class="bi bi-phone"></i> Phone Number (Username)
+                            </label>
+                            <input type="text" class="form-control" id="username" name="username"
+                                   placeholder="Enter your phone number" required autofocus>
+                            <small class="form-text text-muted">Use your registered phone number</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="bi bi-key"></i> Password
+                            </label>
+                            <input type="password" class="form-control" id="password" name="password"
+                                   placeholder="Enter your password" required>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                            <label class="form-check-label" for="remember">
+                                Remember me
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right"></i> Login
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <a href="{{ url_for('auth.request_password_reset') }}" class="text-muted">
+                            <i class="bi bi-question-circle"></i> Forgot password?
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-3 text-muted">
+                <small>
+                    <i class="bi bi-shield-check"></i> Secure login with encrypted connection
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .card {
+        border-radius: 15px;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.25);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Welfare Requests - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-heart"></i> Welfare Management</h2>
+        <a href="{{ url_for('welfare.submit_request') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Submit Request
+        </a>
+    </div>
+
+    {% if stats %}
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Requests</h5>
+                    <h3>{{ stats.pending }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Approved Requests</h5>
+                    <h3>{{ stats.approved }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Paid</h5>
+                    <h3>UGX {{ "{:,.0f}".format(stats.total_paid) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('welfare.list_requests') }}" class="row g-3">
+                <div class="col-md-5">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="Submitted" {% if status_filter == 'Submitted' %}selected{% endif %}>Submitted</option>
+                        <option value="UnderReview" {% if status_filter == 'UnderReview' %}selected{% endif %}>Under Review</option>
+                        <option value="Approved" {% if status_filter == 'Approved' %}selected{% endif %}>Approved</option>
+                        <option value="Rejected" {% if status_filter == 'Rejected' %}selected{% endif %}>Rejected</option>
+                        <option value="Paid" {% if status_filter == 'Paid' %}selected{% endif %}>Paid</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label for="type" class="form-label">Request Type</label>
+                    <select class="form-select" id="type" name="type">
+                        <option value="">All Types</option>
+                        <option value="Bereavement" {% if type_filter == 'Bereavement' %}selected{% endif %}>Bereavement</option>
+                        <option value="Medical" {% if type_filter == 'Medical' %}selected{% endif %}>Medical</option>
+                        <option value="Celebration" {% if type_filter == 'Celebration' %}selected{% endif %}>Celebration</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Requests Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Welfare Requests</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Request No.</th>
+                            <th>Member</th>
+                            <th>Type</th>
+                            <th>Affected Person</th>
+                            <th>Amount Requested</th>
+                            <th>Amount Approved</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                        <tr>
+                            <td><strong>{{ req.request_number }}</strong></td>
+                            <td>{{ req.member.member_number }} - {{ req.member.full_name }}</td>
+                            <td>
+                                <span class="badge
+                                    {% if req.request_type == 'Bereavement' %}bg-dark
+                                    {% elif req.request_type == 'Medical' %}bg-warning
+                                    {% else %}bg-info{% endif %}">
+                                    {{ req.request_type }}
+                                </span>
+                            </td>
+                            <td>{{ req.affected_person }}</td>
+                            <td>
+                                {% if req.amount_requested %}
+                                UGX {{ "{:,.0f}".format(req.amount_requested) }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if req.amount_approved %}
+                                UGX {{ "{:,.0f}".format(req.amount_approved) }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge
+                                    {% if req.status == 'Submitted' %}bg-secondary
+                                    {% elif req.status == 'UnderReview' %}bg-warning
+                                    {% elif req.status == 'Approved' %}bg-success
+                                    {% elif req.status == 'Rejected' %}bg-danger
+                                    {% elif req.status == 'Paid' %}bg-primary
+                                    {% endif %}">
+                                    {{ req.status }}
+                                </span>
+                            </td>
+                            <td>{{ req.submitted_date.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <a href="{{ url_for('welfare.view_request', id=req.id) }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center">No welfare requests found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

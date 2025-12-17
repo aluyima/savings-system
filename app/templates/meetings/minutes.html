@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Meeting Minutes - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-text"></i> Meeting Minutes</h2>
+        <a href="{{ url_for('meetings.view_meeting', id=meeting.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Meeting
+        </a>
+    </div>
+
+    <!-- Meeting Info -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5>{{ meeting.meeting_type }} Meeting</h5>
+            <p class="mb-0">
+                <strong>Date:</strong> {{ meeting.meeting_date.strftime('%d/%m/%Y') }} at {{ meeting.meeting_time.strftime('%H:%M') }}<br>
+                <strong>Venue:</strong> {{ meeting.venue }}<br>
+                <strong>Attendance:</strong> {{ meeting.total_attendance }} members
+                {% if meeting.quorum_met %}
+                <span class="badge bg-success">Quorum Met</span>
+                {% else %}
+                <span class="badge bg-danger">Quorum Not Met</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Minutes Form -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5>{% if minutes %}Edit{% else %}Upload{% endif %} Minutes</h5>
+        </div>
+        <div class="card-body">
+            {% if minutes and minutes.minutes_document_path %}
+            <div class="alert alert-success mb-3">
+                <i class="bi bi-check-circle"></i> <strong>Current Minutes:</strong>
+                <a href="{{ url_for('static', filename='uploads/' + minutes.minutes_document_path) }}" target="_blank" class="alert-link">
+                    <i class="bi bi-file-pdf"></i> View Current Minutes PDF
+                </a>
+                <p class="mb-0 mt-2"><small>Upload a new PDF to replace the current minutes.</small></p>
+            </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('meetings.manage_minutes', id=meeting.id) }}" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="minutes_document" class="form-label">Meeting Minutes (PDF) *</label>
+                    <input type="file" class="form-control" id="minutes_document" name="minutes_document"
+                           accept=".pdf" required>
+                    <div class="form-text">
+                        Upload the meeting minutes as a PDF document. Only PDF files are accepted.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="resolutions_summary" class="form-label">Resolutions Summary (Optional)</label>
+                    <textarea class="form-control" id="resolutions_summary" name="resolutions_summary" rows="5"
+                              placeholder="Enter key resolutions and decisions made...">{% if minutes %}{{ minutes.resolutions_summary }}{% endif %}</textarea>
+                    <div class="form-text">
+                        Summarize key decisions, resolutions, and action points from the meeting.
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> <strong>Note:</strong>
+                    The minutes document should include:
+                    <ul class="mb-0 mt-2">
+                        <li>Opening and welcome</li>
+                        <li>Attendance and quorum confirmation</li>
+                        <li>Matters arising from previous minutes</li>
+                        <li>Discussion of agenda items</li>
+                        <li>Resolutions and decisions</li>
+                        <li>Action items</li>
+                        <li>Closing remarks</li>
+                        <li>Signatures of chairperson and secretary</li>
+                    </ul>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('meetings.view_meeting', id=meeting.id) }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Upload Minutes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Add Member - Old Timers Savings Group{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-person-plus"></i> Add New Member</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('members.add_member') }}">
+                        <h5 class="mb-3">Personal Information</h5>
+
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label">Full Name *</label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" required>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="national_id" class="form-label">National ID</label>
+                                <input type="text" class="form-control" id="national_id" name="national_id">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="date_of_birth" class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="gender" class="form-label">Gender *</label>
+                            <select class="form-select" id="gender" name="gender" required>
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+
+                        <hr class="my-4">
+                        <h5 class="mb-3">Contact Information</h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone_primary" class="form-label">Primary Phone *</label>
+                                <input type="tel" class="form-control" id="phone_primary" name="phone_primary"
+                                       placeholder="0700000000" required>
+                                <small class="form-text text-muted">This will be used as username</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone_secondary" class="form-label">Secondary Phone</label>
+                                <input type="tel" class="form-control" id="phone_secondary" name="phone_secondary"
+                                       placeholder="0700000000">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   placeholder="email@example.com">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="physical_address" class="form-label">Physical Address</label>
+                            <textarea class="form-control" id="physical_address" name="physical_address"
+                                      rows="2"></textarea>
+                        </div>
+
+                        <hr class="my-4">
+                        <h5 class="mb-3">Additional Information</h5>
+
+                        <div class="mb-3">
+                            <label for="occupation" class="form-label">Occupation</label>
+                            <input type="text" class="form-control" id="occupation" name="occupation">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="date_joined" class="form-label">Date Joined</label>
+                            <input type="date" class="form-control" id="date_joined" name="date_joined"
+                                   value="{{ today }}">
+                            <small class="form-text text-muted">Leave empty to use today's date</small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Note:</strong> After creating the member, you can add next of kin information
+                            and create a user account if needed.
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Add Member
+                            </button>
+                            <a href="{{ url_for('members.list_members') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-bar-graph"></i> Reports & Analytics</h2>
+    </div>
+
+    <div class="row">
+        <!-- Financial Summary - All users -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-cash-stack text-primary"></i> Financial Summary
+                    </h5>
+                    <p class="card-text">
+                        Comprehensive financial overview including income, expenses, and net position.
+                    </p>
+                    <a href="{{ url_for('reports.financial_summary') }}" class="btn btn-primary">
+                        <i class="bi bi-eye"></i> View Report
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meetings Report - All users -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-calendar-event text-warning"></i> Meetings
+                    </h5>
+                    <p class="card-text">
+                        Meeting attendance and quorum tracking.
+                    </p>
+                    <a href="{{ url_for('reports.meetings_report') }}" class="btn btn-warning">
+                        <i class="bi bi-eye"></i> View Report
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% if current_user.is_executive() or current_user.is_super_admin() or current_user.is_auditor() %}
+        <!-- Contributions Report - Executives and Auditors -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-cash-coin text-success"></i> Contributions
+                    </h5>
+                    <p class="card-text">
+                        Monthly and annual contribution tracking with collection rates.
+                    </p>
+                    <a href="{{ url_for('reports.contributions_report') }}" class="btn btn-success">
+                        <i class="bi bi-eye"></i> View Report
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loans Report - Executives only -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-bank text-info"></i> Loans
+                    </h5>
+                    <p class="card-text">
+                        Loan portfolio analysis including disbursements, repayments, and outstanding balances.
+                    </p>
+                    <a href="{{ url_for('reports.loans_report') }}" class="btn btn-info">
+                        <i class="bi bi-eye"></i> View Report
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Welfare Report - Executives only -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-heart text-danger"></i> Welfare
+                    </h5>
+                    <p class="card-text">
+                        Welfare requests and payments summary by year.
+                    </p>
+                    <a href="{{ url_for('reports.welfare_report') }}" class="btn btn-danger">
+                        <i class="bi bi-eye"></i> View Report
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Member Statements - Executives only -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-people text-secondary"></i> Member Statements
+                    </h5>
+                    <p class="card-text">
+                        Individual member account statements with full transaction history.
+                    </p>
+                    <a href="{{ url_for('members.list_members') }}" class="btn btn-secondary">
+                        <i class="bi bi-eye"></i> Select Member
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="alert alert-info mt-4">
+        <i class="bi bi-info-circle"></i> <strong>Note:</strong>
+        All reports can be filtered by date range or year. Use the filter options on each report page to customize your view.
+    </div>
+</div>
+{% endblock %}

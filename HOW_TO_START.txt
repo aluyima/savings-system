@@ -1,0 +1,77 @@
+╔══════════════════════════════════════════════════════════════╗
+║    OLD TIMERS SAVINGS GROUP - HOW TO START THE APPLICATION  ║
+╚══════════════════════════════════════════════════════════════╝
+
+EASIEST WAY (Automated):
+═══════════════════════════
+Just run:    ./setup.sh
+
+This will do everything for you automatically!
+
+
+MANUAL WAY (Step by Step):
+═══════════════════════════
+
+1. Open Terminal
+   ↓
+2. Go to project folder:
+   cd /home/alex/savings-system
+   ↓
+3. Activate virtual environment:
+   source venv/bin/activate
+   ↓
+4. Set Flask app:
+   export FLASK_APP=run.py
+   ↓
+5. Initialize database:
+   flask init-db
+   ↓
+6. Create admin user:
+   flask create-admin
+   (You'll be asked for name, phone, password)
+   ↓
+7. Start the application:
+   flask run
+   ↓
+8. Open browser to:
+   http://127.0.0.1:5000
+   ↓
+9. Login with:
+   Username: Your phone number (e.g., 0756123456)
+   Password: Your password
+   ↓
+10. Change password (required on first login)
+   ↓
+11. ✓ Done! You're in the Executive Dashboard
+
+
+IMPORTANT NOTES:
+════════════════
+• Your username is your phone number
+• You MUST change password on first login
+• Database is created in: instance/oldtimerssavings.db
+• To stop the server: Press Ctrl+C
+
+
+COMMANDS YOU NEED TO KNOW:
+═══════════════════════════
+flask init-db       → Create database tables
+flask create-admin  → Create first admin user
+flask run           → Start the application
+flask shell         → Open Python shell
+
+
+NEED MORE HELP?
+═══════════════
+Read:  QUICKSTART.md  (detailed guide)
+Read:  README.md      (full documentation)
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                  QUICK REFERENCE                             ║
+╠══════════════════════════════════════════════════════════════╣
+║ Setup Script:    ./setup.sh                                  ║
+║ Start Server:    flask run                                   ║
+║ Access App:      http://127.0.0.1:5000                       ║
+║ Stop Server:     Ctrl + C                                    ║
+╚══════════════════════════════════════════════════════════════╝

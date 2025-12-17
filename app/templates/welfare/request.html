@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Welfare Request - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-heart"></i> Submit Welfare Request</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('welfare.submit_request') }}">
+                        {% if current_user.is_executive() or current_user.is_super_admin() %}
+                        <div class="mb-3">
+                            <label for="member_id" class="form-label">Select Member *</label>
+                            <select class="form-select" id="member_id" name="member_id" required autofocus>
+                                <option value="">Choose a member...</option>
+                                {% for member in members %}
+                                <option value="{{ member.id }}">{{ member.member_number }} - {{ member.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="request_type" class="form-label">Request Type *</label>
+                            <select class="form-select" id="request_type" name="request_type" required>
+                                <option value="">Select type...</option>
+                                <option value="Bereavement">Bereavement (Death)</option>
+                                <option value="Medical">Medical Emergency</option>
+                                <option value="Celebration">Celebration (Wedding, Birth, etc.)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="affected_person" class="form-label">Affected Person *</label>
+                            <input type="text" class="form-control" id="affected_person" name="affected_person"
+                                   required placeholder="Name of the affected person">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="relationship" class="form-label">Relationship to Member *</label>
+                            <select class="form-select" id="relationship" name="relationship" required>
+                                <option value="">Select relationship...</option>
+                                <option value="Self">Self (Member)</option>
+                                <option value="Spouse">Spouse</option>
+                                <option value="Child">Child</option>
+                                <option value="Parent">Parent</option>
+                                <option value="Sibling">Sibling</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="incident_date" class="form-label">Incident Date *</label>
+                            <input type="date" class="form-control" id="incident_date" name="incident_date" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description *</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required
+                                      placeholder="Provide detailed information about the situation"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="amount_requested" class="form-label">Amount Requested (UGX) - Optional</label>
+                            <input type="number" class="form-control" id="amount_requested" name="amount_requested"
+                                   step="1000" min="0" placeholder="Leave blank if not applicable">
+                            <div class="form-text">The committee will determine the final amount</div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            {% if current_user.is_executive() or current_user.is_super_admin() or current_user.is_auditor() %}
+                            <a href="{{ url_for('welfare.list_requests') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Submit Request
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="bi bi-info-circle"></i> Welfare Support Information</h6>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li><strong>Bereavement:</strong> Support for loss of a member's spouse, child, or parent</li>
+                        <li><strong>Medical:</strong> Assistance for serious medical emergencies</li>
+                        <li><strong>Celebration:</strong> Support for major life events like weddings</li>
+                        <li>All requests require review and approval by the executive committee</li>
+                        <li>Payments are subject to available welfare funds</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

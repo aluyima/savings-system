@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Apply for Loan - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-file-text"></i> Loan Application</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('loans.apply') }}" enctype="multipart/form-data">
+                        {% if current_user.is_executive() or current_user.is_super_admin() %}
+                        <div class="mb-3">
+                            <label for="member_id" class="form-label">Select Member *</label>
+                            <select class="form-select" id="member_id" name="member_id" required autofocus>
+                                <option value="">Choose a member...</option>
+                                {% for member in members %}
+                                <option value="{{ member.id }}">{{ member.member_number }} - {{ member.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="amount_requested" class="form-label">Loan Amount Requested (UGX) *</label>
+                            <input type="number" class="form-control" id="amount_requested" name="amount_requested"
+                                   step="1000" min="10000" required placeholder="e.g., 500000">
+                            <div class="form-text">Enter the amount you wish to borrow</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="purpose" class="form-label">Loan Purpose *</label>
+                            <textarea class="form-control" id="purpose" name="purpose" rows="3" required
+                                      placeholder="Explain the purpose of this loan"></textarea>
+                            <div class="form-text">Provide detailed information about how you will use the loan</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="repayment_period_months" class="form-label">Repayment Period (Months) *</label>
+                            <select class="form-select" id="repayment_period_months" name="repayment_period_months" required>
+                                <option value="1">1 Month</option>
+                                <option value="2" selected>2 Months (Maximum)</option>
+                            </select>
+                            <div class="form-text">Interest Rate: 5% per month</div>
+                        </div>
+
+                        <hr>
+                        <h5>Loan Security</h5>
+
+                        <div class="mb-3">
+                            <label for="security_type" class="form-label">Security Type *</label>
+                            <select class="form-select" id="security_type" name="security_type" required>
+                                <option value="">Choose security type...</option>
+                                <option value="Guarantors">Guarantors (Two Members)</option>
+                                <option value="Collateral">Collateral (Property/Asset)</option>
+                            </select>
+                            <div class="form-text">Select how you will secure this loan</div>
+                        </div>
+
+                        <!-- Guarantors Section -->
+                        <div id="guarantors_section" style="display: none;">
+                            <p class="text-muted">Two active members must guarantee your loan</p>
+
+                            <div class="mb-3">
+                                <label for="guarantor1_id" class="form-label">First Guarantor *</label>
+                                <select class="form-select" id="guarantor1_id" name="guarantor1_id">
+                                    <option value="">Choose first guarantor...</option>
+                                    {% for guarantor in guarantors %}
+                                    <option value="{{ guarantor.id }}">{{ guarantor.member_number }} - {{ guarantor.full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="guarantor2_id" class="form-label">Second Guarantor *</label>
+                                <select class="form-select" id="guarantor2_id" name="guarantor2_id">
+                                    <option value="">Choose second guarantor...</option>
+                                    {% for guarantor in guarantors %}
+                                    <option value="{{ guarantor.id }}">{{ guarantor.member_number }} - {{ guarantor.full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="alert alert-info">
+                                <small><i class="bi bi-info-circle"></i> Only <strong>qualified</strong> members (5+ consecutive months of contributions) appear in the guarantor list. Both guarantors must approve your loan before executive review.</small>
+                            </div>
+                        </div>
+
+                        <!-- Collateral Section -->
+                        <div id="collateral_section" style="display: none;">
+                            <p class="text-muted">Provide details of the property or asset used as collateral</p>
+
+                            <div class="mb-3">
+                                <label for="collateral_description" class="form-label">Collateral Description *</label>
+                                <textarea class="form-control" id="collateral_description" name="collateral_description" rows="3"
+                                          placeholder="Describe the asset/property (e.g., Land title, Vehicle logbook, etc.)"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="collateral_value" class="form-label">Estimated Collateral Value (UGX) *</label>
+                                <input type="number" class="form-control" id="collateral_value" name="collateral_value"
+                                       step="10000" min="0" placeholder="Enter estimated value">
+                                <div class="form-text">Collateral value should be at least equal to the loan amount</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="collateral_documents" class="form-label">Upload Collateral Documents *</label>
+                                <input type="file" class="form-control" id="collateral_documents" name="collateral_documents"
+                                       accept=".pdf,.jpg,.jpeg,.png">
+                                <div class="form-text">Upload scanned copy of title deed, logbook, or other proof (PDF, JPG, PNG)</div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            {% if current_user.is_executive() or current_user.is_super_admin() or current_user.is_auditor() %}
+                            <a href="{{ url_for('loans.list_loans') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Submit Application
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="bi bi-info-circle"></i> Loan Requirements</h6>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Must be an active member in good standing</li>
+                        <li>Must have contributed for at least 5 consecutive months</li>
+                        <li>Choose security type: Either two guarantors OR collateral</li>
+                        <li>Collateral value must be at least equal to loan amount</li>
+                        <li>Maximum loan period is 2 months</li>
+                        <li>Interest rate is 5% per month</li>
+                        <li>Requires approval from the executive committee</li>
+                        <li>Cannot have another active loan</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const securityType = document.getElementById('security_type');
+    const guarantorsSection = document.getElementById('guarantors_section');
+    const collateralSection = document.getElementById('collateral_section');
+    const guarantor1 = document.getElementById('guarantor1_id');
+    const guarantor2 = document.getElementById('guarantor2_id');
+    const collateralDesc = document.getElementById('collateral_description');
+    const collateralValue = document.getElementById('collateral_value');
+    const collateralDocs = document.getElementById('collateral_documents');
+
+    // Show/hide sections based on security type
+    securityType.addEventListener('change', function() {
+        if (this.value === 'Guarantors') {
+            guarantorsSection.style.display = 'block';
+            collateralSection.style.display = 'none';
+
+            // Make guarantors required
+            guarantor1.required = true;
+            guarantor2.required = true;
+
+            // Make collateral optional
+            collateralDesc.required = false;
+            collateralValue.required = false;
+            collateralDocs.required = false;
+
+        } else if (this.value === 'Collateral') {
+            guarantorsSection.style.display = 'none';
+            collateralSection.style.display = 'block';
+
+            // Make guarantors optional
+            guarantor1.required = false;
+            guarantor2.required = false;
+            guarantor1.value = '';
+            guarantor2.value = '';
+
+            // Make collateral required
+            collateralDesc.required = true;
+            collateralValue.required = true;
+            collateralDocs.required = true;
+
+        } else {
+            guarantorsSection.style.display = 'none';
+            collateralSection.style.display = 'none';
+
+            // Make all optional
+            guarantor1.required = false;
+            guarantor2.required = false;
+            collateralDesc.required = false;
+            collateralValue.required = false;
+            collateralDocs.required = false;
+        }
+    });
+
+    // Prevent selecting the same guarantor twice
+    function checkGuarantors() {
+        if (guarantor1.value && guarantor2.value && guarantor1.value === guarantor2.value) {
+            alert('Guarantors must be different members!');
+            guarantor2.value = '';
+        }
+    }
+
+    guarantor1.addEventListener('change', checkGuarantors);
+    guarantor2.addEventListener('change', checkGuarantors);
+});
+</script>
+{% endblock %}

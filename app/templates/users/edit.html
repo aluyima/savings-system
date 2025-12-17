@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User - {{ user.username }} - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h4><i class="bi bi-pencil"></i> Edit User Account - {{ user.username }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('users.edit_user', id=user.id) }}">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> <strong>Note:</strong>
+                            Username cannot be changed. To change the password, use the "Reset Password" function from the user details page.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                            <div class="form-text">Username cannot be modified</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Role *</label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="SuperAdmin" {% if user.role == 'SuperAdmin' %}selected{% endif %}>
+                                    Super Admin (Full Access)
+                                </option>
+                                <option value="Executive" {% if user.role == 'Executive' %}selected{% endif %}>
+                                    Executive (Chairman/Secretary/Treasurer)
+                                </option>
+                                <option value="Auditor" {% if user.role == 'Auditor' %}selected{% endif %}>
+                                    Auditor (Read-Only Access)
+                                </option>
+                                <option value="Member" {% if user.role == 'Member' %}selected{% endif %}>
+                                    Member (Limited Access)
+                                </option>
+                            </select>
+                            <div class="form-text">
+                                <strong>Role Permissions:</strong>
+                                <ul class="mb-0 mt-1">
+                                    <li><strong>SuperAdmin:</strong> Full system access, user management</li>
+                                    <li><strong>Executive:</strong> Member management, financial operations</li>
+                                    <li><strong>Auditor:</strong> View-only access to all records</li>
+                                    <li><strong>Member:</strong> View own records only</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="member_id" class="form-label">Link to Member (Optional)</label>
+                            <select class="form-select" id="member_id" name="member_id">
+                                <option value="">None - System Account</option>
+                                {% for member in members %}
+                                <option value="{{ member.id }}" {% if user.member_id == member.id %}selected{% endif %}>
+                                    {{ member.member_number }} - {{ member.full_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Link this user account to a member record. Required for Member role.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Account Status</label>
+                            <div class="form-control-plaintext">
+                                <span class="badge bg-{{ 'success' if user.is_active else 'danger' }}">
+                                    {{ 'Active' if user.is_active else 'Inactive' }}
+                                </span>
+                                <div class="form-text">To change account status, use the toggle button on the user details page.</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Account Information</label>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <small><strong>Created:</strong></small><br>
+                                            <small class="text-muted">{{ user.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small><strong>Last Login:</strong></small><br>
+                                            <small class="text-muted">
+                                                {% if user.last_login %}
+                                                {{ user.last_login.strftime('%d/%m/%Y %H:%M') }}
+                                                {% else %}
+                                                Never
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('users.view_user', id=user.id) }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-check-circle"></i> Update User
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

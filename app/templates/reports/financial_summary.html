@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Financial Summary - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-cash-stack"></i> Financial Summary</h2>
+        <a href="{{ url_for('reports.reports_index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Reports
+        </a>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-5">
+                    <label for="start_date" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date"
+                           value="{{ start_date.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="col-md-5">
+                    <label for="end_date" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date"
+                           value="{{ end_date.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4>Period: {{ start_date.strftime('%d/%m/%Y') }} to {{ end_date.strftime('%d/%m/%Y') }}</h4>
+        </div>
+    </div>
+
+    <!-- Income Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="bi bi-arrow-down-circle"></i> Income</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="border p-3 text-center">
+                                <h6>Membership Fees</h6>
+                                <h4>{{ format_currency(membership_fees_total) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border p-3 text-center">
+                                <h6>Contributions</h6>
+                                <h4>{{ format_currency(contributions_total) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border p-3 text-center">
+                                <h6>Loan Repayments</h6>
+                                <h4>{{ format_currency(loan_repayments_total) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border p-3 text-center bg-success text-white">
+                                <h6>Total Income</h6>
+                                <h4>{{ format_currency(total_income) }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expenses Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5><i class="bi bi-arrow-up-circle"></i> Expenses</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="border p-3 text-center">
+                                <h6>Loans Disbursed</h6>
+                                <h4>{{ format_currency(loans_disbursed) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border p-3 text-center">
+                                <h6>Welfare Payments</h6>
+                                <h4>{{ format_currency(welfare_payments) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border p-3 text-center">
+                                <h6>Operational Expenses</h6>
+                                <h4>{{ format_currency(operational_expenses) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border p-3 text-center bg-danger text-white">
+                                <h6>Total Expenses</h6>
+                                <h4>{{ format_currency(total_expenses) }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Net Position -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header {% if net_position >= 0 %}bg-primary{% else %}bg-warning{% endif %} text-white">
+                    <h5><i class="bi bi-graph-up"></i> Net Position</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h2>{{ format_currency(net_position) }}</h2>
+                    <p class="mb-0">
+                        {% if net_position >= 0 %}
+                        <span class="text-success"><i class="bi bi-arrow-up"></i> Positive Balance</span>
+                        {% else %}
+                        <span class="text-danger"><i class="bi bi-arrow-down"></i> Deficit</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outstanding Obligations -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="bi bi-bank"></i> Active Loans</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th>Number of Active Loans:</th>
+                            <td>{{ active_loans_count }}</td>
+                        </tr>
+                        <tr>
+                            <th>Outstanding Balance:</th>
+                            <td><strong>{{ format_currency(active_loans_balance) }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="bi bi-heart"></i> Pending Welfare</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th>Pending Requests:</th>
+                            <td>{{ pending_welfare_count }}</td>
+                        </tr>
+                        <tr>
+                            <th>Approved Unpaid Amount:</th>
+                            <td><strong>{{ format_currency(pending_welfare_amount) }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

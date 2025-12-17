@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Record Expense - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-receipt"></i> Record Operational Expense</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('expenses.record_expense') }}" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="expense_category" class="form-label">Category *</label>
+                                    <select class="form-select" id="expense_category" name="expense_category" required>
+                                        <option value="">Select category...</option>
+                                        {% for category in categories %}
+                                        <option value="{{ category }}">{{ category }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="expense_date" class="form-label">Expense Date *</label>
+                                    <input type="date" class="form-control" id="expense_date" name="expense_date"
+                                           value="{{ today }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description *</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"
+                                      required placeholder="Describe the expense..."></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="amount" class="form-label">Amount (UGX) *</label>
+                                    <input type="number" class="form-control" id="amount" name="amount"
+                                           step="0.01" min="0" required placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="payee" class="form-label">Payee *</label>
+                                    <input type="text" class="form-control" id="payee" name="payee"
+                                           required placeholder="Person/organization paid">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="payment_method" class="form-label">Payment Method</label>
+                                    <select class="form-select" id="payment_method" name="payment_method">
+                                        <option value="Cash">Cash</option>
+                                        <option value="Mobile Money">Mobile Money</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="Cheque">Cheque</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="reference_number" class="form-label">Reference Number</label>
+                                    <input type="text" class="form-control" id="reference_number" name="reference_number"
+                                           placeholder="Receipt/transaction reference">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="receipt_document" class="form-label">Receipt/Supporting Document</label>
+                            <input type="file" class="form-control" id="receipt_document" name="receipt_document"
+                                   accept=".pdf,.jpg,.jpeg,.png">
+                            <div class="form-text">Upload receipt or supporting document (PDF, JPG, PNG)</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2"
+                                      placeholder="Any additional information..."></textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> <strong>Note:</strong>
+                            All expenses must have proper documentation. Upload receipts where available.
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('expenses.list_expenses') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Record Expense
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

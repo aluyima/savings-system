@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Membership Fee - Old Timers Savings Group{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4><i class="bi bi-pencil-square"></i> Edit Membership Fee Payment</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Member Information -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5>Member Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td width="30%"><strong>Member Number:</strong></td>
+                                    <td>{{ member.member_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Full Name:</strong></td>
+                                    <td>{{ member.full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Receipt Number:</strong></td>
+                                    <td>{{ receipt.receipt_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td><span class="badge bg-success">Paid</span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Edit Form -->
+                    <form method="POST" action="{{ url_for('membership_fees.edit_payment', receipt_number=receipt.receipt_number) }}">
+                        <div class="mb-3">
+                            <label class="form-label">Membership Fee Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">UGX</span>
+                                <input type="text" class="form-control" value="{{ '{:,.0f}'.format(membership_fee) }}" disabled>
+                            </div>
+                            <div class="form-text">Amount cannot be changed</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_date" class="form-label">Payment Date *</label>
+                            <input type="date" class="form-control" id="payment_date" name="payment_date"
+                                   value="{{ receipt.payment_date.strftime('%Y-%m-%d') }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_method" class="form-label">Payment Method *</label>
+                            <select class="form-select" id="payment_method" name="payment_method" required>
+                                <option value="">Select payment method...</option>
+                                <option value="CashDeposit" {% if receipt.payment_method == 'CashDeposit' %}selected{% endif %}>Cash Deposit</option>
+                                <option value="AgencyBanking" {% if receipt.payment_method == 'AgencyBanking' %}selected{% endif %}>Agency Banking</option>
+                                <option value="EFT" {% if receipt.payment_method == 'EFT' %}selected{% endif %}>EFT (Electronic Funds Transfer)</option>
+                                <option value="MobileMoney" {% if receipt.payment_method == 'MobileMoney' %}selected{% endif %}>Mobile Money</option>
+                            </select>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Note:</strong> Transaction reference cannot be changed. Receipt number and amount are also fixed.
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('membership_fees.view_receipt', receipt_number=receipt.receipt_number) }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-check-circle"></i> Update Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="bi bi-info-circle"></i> What Can Be Edited</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul>
+                            <li><strong>Payment Date:</strong> Can be corrected if entered incorrectly</li>
+                            <li><strong>Payment Method:</strong> Can be updated to reflect the correct payment channel</li>
+                            <li><strong>Cannot Change:</strong> Receipt number, amount, transaction reference, or member</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

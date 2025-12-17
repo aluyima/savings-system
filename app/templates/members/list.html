@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Members - Old Timers Savings Group{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-people"></i> Members</h2>
+        {% if not current_user.is_auditor() %}
+        <a href="{{ url_for('members.add_member') }}" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i> Add New Member
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('members.list_members') }}" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" class="form-control" name="search" value="{{ search }}"
+                           placeholder="Name, member number, or phone">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="status">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                        <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+                        <option value="Inactive" {% if status_filter == 'Inactive' %}selected{% endif %}>Inactive</option>
+                        <option value="Suspended" {% if status_filter == 'Suspended' %}selected{% endif %}>Suspended</option>
+                        <option value="Expelled" {% if status_filter == 'Expelled' %}selected{% endif %}>Expelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                    <a href="{{ url_for('members.list_members') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Members Table -->
+    <div class="card">
+        <div class="card-header">
+            <strong>{{ members.total }} Members Found</strong>
+        </div>
+        <div class="card-body">
+            {% if members.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Member #</th>
+                            <th>Full Name</th>
+                            <th>Phone</th>
+                            <th>Date Joined</th>
+                            <th>Status</th>
+                            <th>Qualified</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in members.items %}
+                        <tr>
+                            <td><strong>{{ member.member_number }}</strong></td>
+                            <td>{{ member.full_name }}</td>
+                            <td>{{ member.phone_primary }}</td>
+                            <td>{{ member.date_joined|format_date }}</td>
+                            <td>
+                                <span class="badge
+                                    {% if member.status == 'Active' %}bg-success
+                                    {% elif member.status == 'Suspended' %}bg-warning
+                                    {% elif member.status == 'Expelled' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ member.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if member.qualified_for_benefits %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Yes</span>
+                                {% else %}
+                                <span class="badge bg-secondary"><i class="bi bi-x-circle"></i> No</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('members.view_member', id=member.id) }}"
+                                   class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if members.pages > 1 %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if members.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('members.list_members', page=members.prev_num, status=status_filter, search=search) }}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for page_num in members.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == members.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('members.list_members', page=page_num, status=status_filter, search=search) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if members.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('members.list_members', page=members.next_num, status=status_filter, search=search) }}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-people" style="font-size: 4rem; color: #ccc;"></i>
+                <p class="text-muted mt-3">No members found</p>
+                <a href="{{ url_for('members.add_member') }}" class="btn btn-primary">
+                    <i class="bi bi-person-plus"></i> Add First Member
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

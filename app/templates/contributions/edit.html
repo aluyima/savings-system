@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Contribution - Okwezimba Twegatte SACCO{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="bi bi-pencil"></i> Edit Contribution</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Note:</strong> You cannot change the member or contribution month.
+                    </div>
+
+                    <form method="POST" action="{{ url_for('contributions.edit_contribution', id=contribution.id) }}">
+                        <div class="mb-3">
+                            <label class="form-label">Receipt Number</label>
+                            <input type="text" class="form-control" value="{{ contribution.receipt_number }}" disabled>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Member</label>
+                            <input type="text" class="form-control"
+                                   value="{{ contribution.member.member_number }} - {{ contribution.member.full_name }}" disabled>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Contribution Month</label>
+                            <input type="text" class="form-control" value="{{ contribution.contribution_month }}" disabled>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount (UGX) *</label>
+                            <input type="number" class="form-control" id="amount" name="amount"
+                                   step="0.01" min="0.01" value="{{ contribution.amount }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_date" class="form-label">Payment Date *</label>
+                            <input type="date" class="form-control" id="payment_date" name="payment_date"
+                                   value="{{ contribution.payment_date.strftime('%Y-%m-%d') }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_method" class="form-label">Payment Method *</label>
+                            <select class="form-select" id="payment_method" name="payment_method" required>
+                                <option value="">Select payment method...</option>
+                                <option value="CashDeposit" {% if contribution.payment_method == 'CashDeposit' %}selected{% endif %}>Cash Deposit</option>
+                                <option value="AgencyBanking" {% if contribution.payment_method == 'AgencyBanking' %}selected{% endif %}>Agency Banking</option>
+                                <option value="EFT" {% if contribution.payment_method == 'EFT' %}selected{% endif %}>EFT (Electronic Funds Transfer)</option>
+                                <option value="MobileMoney" {% if contribution.payment_method == 'MobileMoney' %}selected{% endif %}>Mobile Money</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="transaction_reference" class="form-label">Transaction Reference / Payment ID *</label>
+                            <input type="text" class="form-control" id="transaction_reference" name="transaction_reference"
+                                   value="{{ contribution.transaction_reference or '' }}"
+                                   required placeholder="Bank transaction ID or reference number">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"
+                                      placeholder="Optional: Additional notes about this contribution">{{ contribution.notes or '' }}</textarea>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('contributions.view_contribution', id=contribution.id) }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Update Contribution
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

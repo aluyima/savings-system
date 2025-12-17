@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Welfare Request {{ welfare_request.request_number }} - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-heart"></i> Welfare Request {{ welfare_request.request_number }}</h2>
+        {% if current_user.is_executive() or current_user.is_super_admin() or current_user.is_auditor() %}
+        <a href="{{ url_for('welfare.list_requests') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+        {% else %}
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Request Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Request Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="50%">Request Number:</th>
+                                    <td><strong>{{ welfare_request.request_number }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Member:</th>
+                                    <td>{{ welfare_request.member.member_number }} - {{ welfare_request.member.full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Request Type:</th>
+                                    <td>
+                                        <span class="badge
+                                            {% if welfare_request.request_type == 'Bereavement' %}bg-dark
+                                            {% elif welfare_request.request_type == 'Medical' %}bg-warning
+                                            {% else %}bg-info{% endif %}">
+                                            {{ welfare_request.request_type }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        <span class="badge
+                                            {% if welfare_request.status == 'Submitted' %}bg-secondary
+                                            {% elif welfare_request.status == 'UnderReview' %}bg-warning
+                                            {% elif welfare_request.status == 'Approved' %}bg-success
+                                            {% elif welfare_request.status == 'Rejected' %}bg-danger
+                                            {% elif welfare_request.status == 'Paid' %}bg-primary
+                                            {% endif %}">
+                                            {{ welfare_request.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="50%">Affected Person:</th>
+                                    <td>{{ welfare_request.affected_person }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Relationship:</th>
+                                    <td>{{ welfare_request.relationship }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Incident Date:</th>
+                                    <td>{{ welfare_request.incident_date.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Submitted Date:</th>
+                                    <td>{{ welfare_request.submitted_date.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <h6>Description</h6>
+                    <p>{{ welfare_request.description }}</p>
+
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <strong>Amount Requested:</strong>
+                            {% if welfare_request.amount_requested %}
+                            UGX {{ "{:,.0f}".format(welfare_request.amount_requested) }}
+                            {% else %}
+                            Not specified
+                            {% endif %}
+                        </div>
+                        {% if welfare_request.amount_approved %}
+                        <div class="col-md-6">
+                            <strong>Amount Approved:</strong>
+                            <span class="text-success">UGX {{ "{:,.0f}".format(welfare_request.amount_approved) }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Information -->
+            {% if welfare_request.payment %}
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5>Payment Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="30%">Voucher Number:</th>
+                            <td><strong>{{ welfare_request.payment.payment_voucher_number }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Amount Paid:</th>
+                            <td>UGX {{ "{:,.0f}".format(welfare_request.payment.amount_paid) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Payment Date:</th>
+                            <td>{{ welfare_request.payment.payment_date.strftime('%d/%m/%Y') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Payment Method:</th>
+                            <td>{{ welfare_request.payment.payment_method }}</td>
+                        </tr>
+                        {% if welfare_request.payment.withdrawal_reference %}
+                        <tr>
+                            <th>Withdrawal Reference:</th>
+                            <td>{{ welfare_request.payment.withdrawal_reference }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if welfare_request.payment.withdrawal_document_path %}
+                        <tr>
+                            <th>Withdrawal Document:</th>
+                            <td>
+                                <a href="{{ url_for('static', filename='uploads/' + welfare_request.payment.withdrawal_document_path) }}"
+                                   target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-download"></i> View Document
+                                </a>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th>Beneficiary:</th>
+                            <td>{{ welfare_request.payment.beneficiary_name }}</td>
+                        </tr>
+                        {% if welfare_request.payment.beneficiary_phone %}
+                        <tr>
+                            <th>Beneficiary Phone:</th>
+                            <td>{{ welfare_request.payment.beneficiary_phone }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if welfare_request.payment.beneficiary_receipt_path %}
+                        <tr>
+                            <th>Beneficiary Receipt:</th>
+                            <td>
+                                <a href="{{ url_for('static', filename='uploads/' + welfare_request.payment.beneficiary_receipt_path) }}"
+                                   target="_blank" class="btn btn-sm btn-success">
+                                    <i class="bi bi-download"></i> View Receipt
+                                </a>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Actions -->
+        <div class="col-md-4">
+            {% if current_user.is_executive() or current_user.is_super_admin() %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Actions</h5>
+                </div>
+                <div class="card-body">
+                    {% if welfare_request.status == 'Submitted' %}
+                    <form method="POST" action="{{ url_for('welfare.review_request', id=welfare_request.id) }}" class="mb-3">
+                        <label for="secretary_notes" class="form-label">Review Notes</label>
+                        <textarea class="form-control mb-2" id="secretary_notes" name="secretary_notes" rows="2"></textarea>
+                        <button type="submit" class="btn btn-info btn-sm w-100">
+                            <i class="bi bi-eye"></i> Mark as Under Review
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    {% if welfare_request.status in ['Submitted', 'UnderReview'] %}
+                    <form method="POST" action="{{ url_for('welfare.approve_request', id=welfare_request.id) }}" class="mb-3">
+                        <label for="amount_approved" class="form-label">Approved Amount (UGX)</label>
+                        <input type="number" class="form-control mb-2" id="amount_approved" name="amount_approved"
+                               value="{{ welfare_request.amount_requested or 0 }}" step="1000" min="1000" required>
+                        <label for="chairman_notes" class="form-label">Notes</label>
+                        <textarea class="form-control mb-2" id="chairman_notes" name="chairman_notes" rows="2"></textarea>
+                        <button type="submit" class="btn btn-success btn-sm w-100">
+                            <i class="bi bi-check-circle"></i> Approve Request
+                        </button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('welfare.reject_request', id=welfare_request.id) }}">
+                        <label for="rejection_reason" class="form-label">Rejection Reason</label>
+                        <textarea class="form-control mb-2" id="rejection_reason" name="rejection_reason" rows="2" required></textarea>
+                        <button type="submit" class="btn btn-danger btn-sm w-100">
+                            <i class="bi bi-x-circle"></i> Reject Request
+                        </button>
+                    </form>
+
+                    {% elif welfare_request.status == 'Approved' %}
+                    <a href="{{ url_for('welfare.record_payment', id=welfare_request.id) }}" class="btn btn-primary w-100">
+                        <i class="bi bi-cash-stack"></i> Record Payment
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Review Information -->
+            {% if welfare_request.secretary_notes %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6>Secretary Review</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Date:</strong> {{ welfare_request.secretary_review_date.strftime('%d/%m/%Y') }}</p>
+                    <p class="mb-0"><strong>Notes:</strong> {{ welfare_request.secretary_notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if welfare_request.chairman_notes or welfare_request.rejection_reason %}
+            <div class="card">
+                <div class="card-header">
+                    <h6>Chairman Decision</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Date:</strong> {{ welfare_request.chairman_approval_date.strftime('%d/%m/%Y') }}</p>
+                    {% if welfare_request.chairman_notes %}
+                    <p class="mb-0"><strong>Notes:</strong> {{ welfare_request.chairman_notes }}</p>
+                    {% elif welfare_request.rejection_reason %}
+                    <p class="mb-0"><strong>Reason:</strong> {{ welfare_request.rejection_reason }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

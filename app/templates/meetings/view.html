@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Meeting Details - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-calendar-event"></i> Meeting Details</h2>
+        <a href="{{ url_for('meetings.list_meetings') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-md-8">
+            <!-- Meeting Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Meeting Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="30%">Type:</th>
+                            <td><span class="badge bg-info">{{ meeting.meeting_type }}</span></td>
+                        </tr>
+                        <tr>
+                            <th>Date & Time:</th>
+                            <td>{{ meeting.meeting_date.strftime('%A, %d %B %Y') }} at {{ meeting.meeting_time.strftime('%H:%M') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Venue:</th>
+                            <td>{{ meeting.venue }}</td>
+                        </tr>
+                        <tr>
+                            <th>Called By:</th>
+                            <td>{{ meeting.caller.full_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td>
+                                <span class="badge
+                                    {% if meeting.status == 'Scheduled' %}bg-primary
+                                    {% elif meeting.status == 'Completed' %}bg-success
+                                    {% elif meeting.status == 'Cancelled' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ meeting.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% if meeting.total_attendance %}
+                        <tr>
+                            <th>Attendance:</th>
+                            <td>{{ meeting.total_attendance }} members</td>
+                        </tr>
+                        <tr>
+                            <th>Quorum:</th>
+                            <td>
+                                {% if meeting.quorum_met %}
+                                <span class="badge bg-success">Met (5+ members)</span>
+                                {% else %}
+                                <span class="badge bg-danger">Not Met (< 5 members)</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </table>
+
+                    <hr>
+                    <h6>Agenda</h6>
+                    <div style="white-space: pre-wrap;">{{ meeting.agenda }}</div>
+                </div>
+            </div>
+
+            <!-- Minutes -->
+            {% if meeting.minutes %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Meeting Minutes</h5>
+                </div>
+                <div class="card-body">
+                    {% if meeting.minutes.minutes_document_path %}
+                    <div class="mb-3">
+                        <a href="{{ url_for('static', filename='uploads/' + meeting.minutes.minutes_document_path) }}"
+                           target="_blank" class="btn btn-primary">
+                            <i class="bi bi-file-pdf"></i> View Minutes PDF
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if meeting.minutes.resolutions_summary %}
+                    <hr>
+                    <h6>Resolutions Summary</h6>
+                    <div style="white-space: pre-wrap;">{{ meeting.minutes.resolutions_summary }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Attendance -->
+            {% if attendance_records %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Attendance ({{ attendance_records|length }} members)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Member</th>
+                                    <th>Status</th>
+                                    <th>Arrival Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for att in attendance_records %}
+                                <tr>
+                                    <td>{{ att.member.member_number }} - {{ att.member.full_name }}</td>
+                                    <td>
+                                        <span class="badge
+                                            {% if att.status == 'Present' %}bg-success
+                                            {% elif att.status == 'Excused' %}bg-warning
+                                            {% else %}bg-danger{% endif %}">
+                                            {{ att.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if att.arrival_time %}
+                                        {{ att.arrival_time.strftime('%H:%M') }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Action Items -->
+            {% if action_items %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Action Items</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Assigned To</th>
+                                    <th>Deadline</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in action_items %}
+                                <tr>
+                                    <td>{{ item.description }}</td>
+                                    <td>{{ item.assignee.full_name }}</td>
+                                    <td>{{ item.deadline.strftime('%d/%m/%Y') if item.deadline else 'N/A' }}</td>
+                                    <td>
+                                        <span class="badge
+                                            {% if item.status == 'Completed' %}bg-success
+                                            {% elif item.status == 'InProgress' %}bg-primary
+                                            {% elif item.status == 'Cancelled' %}bg-danger
+                                            {% else %}bg-warning{% endif %}">
+                                            {{ item.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Actions -->
+        <div class="col-md-4">
+            {% if current_user.is_executive() or current_user.is_super_admin() %}
+            <div class="card">
+                <div class="card-header">
+                    <h5>Actions</h5>
+                </div>
+                <div class="card-body">
+                    {% if meeting.status == 'Scheduled' %}
+                    <a href="{{ url_for('meetings.record_attendance', id=meeting.id) }}"
+                       class="btn btn-primary btn-sm w-100 mb-2">
+                        <i class="bi bi-people"></i> Record Attendance
+                    </a>
+                    <form method="POST" action="{{ url_for('meetings.cancel_meeting', id=meeting.id) }}" class="mb-2">
+                        <button type="submit" class="btn btn-danger btn-sm w-100"
+                                onclick="return confirm('Are you sure you want to cancel this meeting?')">
+                            <i class="bi bi-x-circle"></i> Cancel Meeting
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <a href="{{ url_for('meetings.manage_minutes', id=meeting.id) }}"
+                       class="btn btn-info btn-sm w-100 mb-2">
+                        <i class="bi bi-file-text"></i> {% if meeting.minutes %}Edit{% else %}Add{% endif %} Minutes
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

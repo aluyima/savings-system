@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+
+{% block title %}Loan {{ loan.loan_number }} - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-text"></i> Loan {{ loan.loan_number }}</h2>
+        {% if current_user.is_executive() or current_user.is_super_admin() or current_user.is_auditor() %}
+        <a href="{{ url_for('loans.list_loans') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+        {% else %}
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-md-8">
+            <!-- Loan Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Loan Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="50%">Loan Number:</th>
+                                    <td><strong>{{ loan.loan_number }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Member:</th>
+                                    <td>{{ loan.member.member_number }} - {{ loan.member.full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Application Date:</th>
+                                    <td>{{ loan.created_at.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        <span class="badge
+                                            {% if loan.status == 'Pending Guarantor Approval' %}bg-warning
+                                            {% elif loan.status == 'Returned to Applicant' %}bg-secondary
+                                            {% elif loan.status == 'Pending Executive Approval' %}bg-info
+                                            {% elif loan.status == 'Approved' %}bg-info
+                                            {% elif loan.status == 'Disbursed' or loan.status == 'Active' %}bg-primary
+                                            {% elif loan.status == 'Completed' %}bg-success
+                                            {% elif loan.status == 'Rejected' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ loan.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="50%">Amount Requested:</th>
+                                    <td>{{ format_currency(loan.amount_requested) }}</td>
+                                </tr>
+                                {% if loan.amount_approved %}
+                                <tr>
+                                    <th>Amount Approved:</th>
+                                    <td><strong>{{ format_currency(loan.amount_approved) }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Interest Rate:</th>
+                                    <td>{{ loan.interest_rate }}% per month</td>
+                                </tr>
+                                <tr>
+                                    <th>Repayment Period:</th>
+                                    <td>{{ loan.repayment_period_months }} months</td>
+                                </tr>
+                                <tr>
+                                    <th>Total Payable:</th>
+                                    <td><strong>{{ format_currency(loan.total_payable) }}</strong></td>
+                                </tr>
+                                {% if loan.due_date %}
+                                <tr>
+                                    <th>Due Date:</th>
+                                    <td>
+                                        <strong>{{ loan.due_date.strftime('%d/%m/%Y') }}</strong>
+                                        {% if loan.status in ['Active', 'Disbursed'] and loan.balance > 0 %}
+                                            {% set days_until_due = (loan.due_date - today).days if today else None %}
+                                            {% if days_until_due is not none %}
+                                                {% if days_until_due < 0 %}
+                                                    <span class="badge bg-danger ms-2">{{ -days_until_due }} days overdue</span>
+                                                {% elif days_until_due == 0 %}
+                                                    <span class="badge bg-warning text-dark ms-2">Due today!</span>
+                                                {% elif days_until_due == 1 %}
+                                                    <span class="badge bg-warning text-dark ms-2">Due tomorrow</span>
+                                                {% elif days_until_due <= 7 %}
+                                                    <span class="badge bg-info ms-2">Due in {{ days_until_due }} days</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <h6>Loan Purpose</h6>
+                    <p>{{ loan.purpose }}</p>
+                </div>
+            </div>
+
+            <!-- Loan Security -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Loan Security - {{ loan.security_type }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if loan.security_type == 'Guarantors' %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>First Guarantor</h6>
+                            {% if loan.guarantor1 %}
+                            <p>
+                                <strong>{{ loan.guarantor1.member_number }}</strong> - {{ loan.guarantor1.full_name }}
+                                {% if loan.guarantor1.is_qualified() %}
+                                <span class="badge bg-success" title="Qualified for benefits"><i class="bi bi-check-circle-fill"></i> Qualified</span>
+                                {% else %}
+                                <span class="badge bg-secondary" title="Not yet qualified"><i class="bi bi-hourglass-split"></i> Not Qualified</span>
+                                {% endif %}
+                                <br>
+                                Phone: {{ loan.guarantor1.phone_primary }}<br>
+                                <strong>Approval Status:</strong>
+                                {% if loan.guarantor1_approved == True %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Approved</span>
+                                {% if loan.guarantor1_approval_date %}
+                                <br><small class="text-muted">on {{ loan.guarantor1_approval_date.strftime('%d/%m/%Y %H:%M') }}</small>
+                                {% endif %}
+                                {% elif loan.guarantor1_approved == False %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Declined</span>
+                                {% if loan.guarantor1_rejection_reason %}
+                                <br><small class="text-muted">Reason: {{ loan.guarantor1_rejection_reason }}</small>
+                                {% endif %}
+                                {% else %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Pending</span>
+                                {% endif %}
+                            </p>
+                            {% else %}
+                            <p class="text-muted">Not specified</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Second Guarantor</h6>
+                            {% if loan.guarantor2 %}
+                            <p>
+                                <strong>{{ loan.guarantor2.member_number }}</strong> - {{ loan.guarantor2.full_name }}
+                                {% if loan.guarantor2.is_qualified() %}
+                                <span class="badge bg-success" title="Qualified for benefits"><i class="bi bi-check-circle-fill"></i> Qualified</span>
+                                {% else %}
+                                <span class="badge bg-secondary" title="Not yet qualified"><i class="bi bi-hourglass-split"></i> Not Qualified</span>
+                                {% endif %}
+                                <br>
+                                Phone: {{ loan.guarantor2.phone_primary }}<br>
+                                <strong>Approval Status:</strong>
+                                {% if loan.guarantor2_approved == True %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Approved</span>
+                                {% if loan.guarantor2_approval_date %}
+                                <br><small class="text-muted">on {{ loan.guarantor2_approval_date.strftime('%d/%m/%Y %H:%M') }}</small>
+                                {% endif %}
+                                {% elif loan.guarantor2_approved == False %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Declined</span>
+                                {% if loan.guarantor2_rejection_reason %}
+                                <br><small class="text-muted">Reason: {{ loan.guarantor2_rejection_reason }}</small>
+                                {% endif %}
+                                {% else %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Pending</span>
+                                {% endif %}
+                            </p>
+                            {% else %}
+                            <p class="text-muted">Not specified</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% elif loan.security_type == 'Collateral' %}
+                    <h6>Collateral Details</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="30%">Description:</th>
+                            <td>{{ loan.collateral_description }}</td>
+                        </tr>
+                        <tr>
+                            <th>Estimated Value:</th>
+                            <td>{{ format_currency(loan.collateral_value) }}</td>
+                        </tr>
+                        {% if loan.collateral_documents_path %}
+                        <tr>
+                            <th>Documents:</th>
+                            <td>
+                                <a href="{{ url_for('static', filename='uploads/' + loan.collateral_documents_path) }}"
+                                   target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-download"></i> View Document
+                                </a>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Repayments -->
+            {% if loan.status in ['Active', 'Disbursed', 'Completed'] %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Repayment History</h5>
+                </div>
+                <div class="card-body">
+                    {% if loan.repayments.count() > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Receipt No.</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Principal</th>
+                                    <th>Interest</th>
+                                    <th>Method</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for repayment in repayments %}
+                                <tr>
+                                    <td>{{ repayment.receipt_number }}</td>
+                                    <td>{{ repayment.payment_date.strftime('%d/%m/%Y') }}</td>
+                                    <td>{{ format_currency(repayment.amount_paid) }}</td>
+                                    <td>{{ format_currency(repayment.principal_portion) }}</td>
+                                    <td>{{ format_currency(repayment.interest_portion) }}</td>
+                                    <td>{{ repayment.payment_method }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No repayments recorded yet</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Actions & Status -->
+        <div class="col-md-4">
+            <!-- Loan Summary -->
+            {% if loan.status in ['Active', 'Disbursed', 'Completed'] %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5>Loan Summary</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th>Total Payable:</th>
+                            <td>{{ format_currency(loan.total_payable) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Total Paid:</th>
+                            <td>{{ format_currency(loan.total_paid or 0) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Balance:</th>
+                            <td><strong>{{ format_currency(loan.balance or 0) }}</strong></td>
+                        </tr>
+                    </table>
+
+                    {% if loan.balance > 0 %}
+                    <div class="progress mt-2">
+                        {% set progress = ((loan.total_paid or 0) / loan.total_payable * 100) | int %}
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ progress }}%">
+                            {{ progress }}%
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Applicant Actions - For Returned Loans -->
+            {% if current_user.member and loan.member_id == current_user.member.id and loan.status == 'Returned to Applicant' %}
+            <div class="card mb-4 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5><i class="bi bi-arrow-return-left"></i> Loan Application Returned</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> <strong>Your loan application has been returned.</strong>
+                        <br><br>
+                        {% if loan.guarantor1_approved == False %}
+                        <strong>{{ loan.guarantor1.full_name }}</strong> (Guarantor #1) declined to guarantee this loan.
+                        {% if loan.guarantor1_rejection_reason %}
+                        <br><em>Reason: {{ loan.guarantor1_rejection_reason }}</em>
+                        {% endif %}
+                        {% endif %}
+                        {% if loan.guarantor2_approved == False %}
+                        <strong>{{ loan.guarantor2.full_name }}</strong> (Guarantor #2) declined to guarantee this loan.
+                        {% if loan.guarantor2_rejection_reason %}
+                        <br><em>Reason: {{ loan.guarantor2_rejection_reason }}</em>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <p><strong>What you can do:</strong></p>
+                    <ul>
+                        <li>Select a new guarantor to replace the one who declined</li>
+                        <li>Change your security type to Collateral instead</li>
+                        <li>Modify your loan amount or purpose</li>
+                    </ul>
+
+                    <a href="{{ url_for('loans.edit_loan', id=loan.id) }}" class="btn btn-primary w-100 mb-2">
+                        <i class="bi bi-pencil"></i> Revise & Resubmit Application
+                    </a>
+
+                    <a href="{{ url_for('loans.cancel_loan', id=loan.id) }}" class="btn btn-outline-secondary w-100"
+                       onclick="return confirm('Are you sure you want to cancel this loan application?');">
+                        <i class="bi bi-x-circle"></i> Cancel Application
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Guarantor Actions -->
+            {% if current_user.member and (loan.guarantor1_id == current_user.member.id or loan.guarantor2_id == current_user.member.id) %}
+                {% set is_guarantor1 = (loan.guarantor1_id == current_user.member.id) %}
+                {% set is_guarantor2 = (loan.guarantor2_id == current_user.member.id) %}
+                {% set my_approval_status = loan.guarantor1_approved if is_guarantor1 else loan.guarantor2_approved %}
+
+                {% if my_approval_status is none and loan.status in ['Pending Guarantor Approval', 'Returned to Applicant'] %}
+                <div class="card mb-4 border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h5><i class="bi bi-exclamation-triangle-fill"></i> Guarantor Approval Required</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> You have been selected as <strong>Guarantor #{{ '1' if is_guarantor1 else '2' }}</strong> for this loan.
+                            Please review the loan details above and approve or decline this request.
+                        </p>
+
+                        <!-- Approve Form -->
+                        <form method="POST" action="{{ url_for('loans.approve_as_guarantor', id=loan.id) }}" class="mb-3">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-check-circle"></i> Approve as Guarantor
+                            </button>
+                        </form>
+
+                        <!-- Decline Form -->
+                        <form method="POST" action="{{ url_for('loans.decline_as_guarantor', id=loan.id) }}">
+                            <label for="rejection_reason" class="form-label">Reason for Declining <span class="text-danger">*</span></label>
+                            <textarea class="form-control mb-2" id="rejection_reason" name="rejection_reason" rows="3" required
+                                      placeholder="Please provide a reason for declining this guarantor request..."></textarea>
+                            <button type="submit" class="btn btn-danger w-100">
+                                <i class="bi bi-x-circle"></i> Decline as Guarantor
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% elif my_approval_status == True %}
+                <div class="card mb-4 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5><i class="bi bi-check-circle-fill"></i> You Approved This Loan</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">Thank you for approving this loan as Guarantor #{{ '1' if is_guarantor1 else '2' }}.</p>
+                    </div>
+                </div>
+                {% elif my_approval_status == False %}
+                <div class="card mb-4 border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5><i class="bi bi-x-circle-fill"></i> You Declined This Loan</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">You declined this guarantor request as Guarantor #{{ '1' if is_guarantor1 else '2' }}.</p>
+                    </div>
+                </div>
+                {% endif %}
+            {% endif %}
+
+            <!-- Executive Actions -->
+            {% if current_user.is_executive() or current_user.is_super_admin() %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Executive Actions</h5>
+                </div>
+                <div class="card-body">
+                    {% if loan.status in ['Pending Guarantor Approval', 'Pending Executive Approval'] %}
+
+                    <!-- Show warning if guarantors haven't approved yet -->
+                    {% if loan.security_type == 'Guarantors' and not loan.both_guarantors_approved() %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> This loan cannot be approved until both guarantors approve.
+                        <br><small>Current status:
+                            Guarantor 1: {% if loan.guarantor1_approved == True %}✓ Approved{% elif loan.guarantor1_approved == False %}✗ Declined{% else %}⏳ Pending{% endif %} |
+                            Guarantor 2: {% if loan.guarantor2_approved == True %}✓ Approved{% elif loan.guarantor2_approved == False %}✗ Declined{% else %}⏳ Pending{% endif %}
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <!-- Show error if current executive is a guarantor -->
+                    {% if current_user.member and (loan.guarantor1_id == current_user.member.id or loan.guarantor2_id == current_user.member.id) %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-octagon"></i> <strong>You cannot approve this loan!</strong>
+                        <br>You are a guarantor for this loan. Another executive must approve it.
+                    </div>
+                    {% elif (loan.security_type == 'Guarantors' and loan.both_guarantors_approved()) or loan.security_type == 'Collateral' %}
+                    <!-- Approve Form -->
+                    <form method="POST" action="{{ url_for('loans.approve_loan', id=loan.id) }}" class="mb-3">
+                        <label for="amount_approved" class="form-label">Approved Amount (UGX)</label>
+                        <input type="number" class="form-control mb-2" id="amount_approved" name="amount_approved"
+                               value="{{ loan.amount_requested }}" step="1000" min="1000" required>
+                        <label for="approval_notes" class="form-label">Notes</label>
+                        <textarea class="form-control mb-2" id="approval_notes" name="approval_notes" rows="2"></textarea>
+                        <button type="submit" class="btn btn-success btn-sm w-100">
+                            <i class="bi bi-check-circle"></i> Approve Loan
+                        </button>
+                    </form>
+
+                    <!-- Reject Form -->
+                    <form method="POST" action="{{ url_for('loans.reject_loan', id=loan.id) }}">
+                        <label for="rejection_reason" class="form-label">Rejection Reason</label>
+                        <textarea class="form-control mb-2" id="rejection_reason" name="rejection_reason" rows="2" required></textarea>
+                        <button type="submit" class="btn btn-danger btn-sm w-100">
+                            <i class="bi bi-x-circle"></i> Reject Loan
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    {% elif loan.status == 'Approved' %}
+                    <a href="{{ url_for('loans.disburse_loan', id=loan.id) }}" class="btn btn-primary w-100 mb-2">
+                        <i class="bi bi-cash-stack"></i> Disburse Loan
+                    </a>
+
+                    {% elif loan.status in ['Active', 'Disbursed'] %}
+                    <a href="{{ url_for('loans.record_repayment', id=loan.id) }}" class="btn btn-success w-100 mb-2">
+                        <i class="bi bi-arrow-down-circle"></i> Record Repayment
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Approval Information -->
+            {% if loan.approval_date %}
+            <div class="card">
+                <div class="card-header">
+                    <h6>Approval Details</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Date:</strong> {{ loan.approval_date.strftime('%d/%m/%Y') }}</p>
+                    {% if loan.approval_notes %}
+                    <p class="mb-0"><strong>Notes:</strong> {{ loan.approval_notes }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Disbursement Information -->
+            {% if loan.disbursement_date %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6>Disbursement Details</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Date:</strong> {{ loan.disbursement_date.strftime('%d/%m/%Y') }}</p>
+                    <p class="mb-1"><strong>Method:</strong> {{ loan.disbursement_method }}</p>
+                    {% if loan.disbursement_reference %}
+                    <p class="mb-1"><strong>Withdrawal Reference:</strong> {{ loan.disbursement_reference }}</p>
+                    {% endif %}
+                    {% if loan.disbursement_document_path %}
+                    <p class="mb-0">
+                        <strong>Withdrawal Document:</strong>
+                        <a href="{{ url_for('static', filename='uploads/' + loan.disbursement_document_path) }}"
+                           target="_blank" class="btn btn-sm btn-primary">
+                            <i class="bi bi-download"></i> View Document
+                        </a>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

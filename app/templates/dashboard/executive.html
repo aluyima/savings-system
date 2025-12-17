@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Executive Dashboard - Old Timers Savings Group{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-speedometer2"></i> Executive Dashboard</h2>
+    <div>
+        <span class="badge bg-primary">{{ current_user.role }}</span>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <h3>{{ total_members }}</h3>
+            <p>Total Active Members</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <h3>{{ active_members }}</h3>
+            <p>Qualified Members</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <h3>{{ month_contributions }}</h3>
+            <p>This Month Contributions</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <h3>{{ month_total|format_currency }}</h3>
+            <p>Total This Month</p>
+        </div>
+    </div>
+</div>
+
+<!-- Action Required Section -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-exclamation-circle"></i> Action Required
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Pending Welfare Requests
+                        <span class="badge bg-warning">{{ pending_welfare }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Pending Loan Applications
+                        <span class="badge bg-info">{{ pending_loans }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Active Loans
+                        <span class="badge bg-success">{{ active_loans }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-calendar-event"></i> Upcoming Meetings
+            </div>
+            <div class="card-body">
+                {% if upcoming_meetings %}
+                <ul class="list-group list-group-flush">
+                    {% for meeting in upcoming_meetings %}
+                    <li class="list-group-item">
+                        <strong>{{ meeting.meeting_type }}</strong><br>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar"></i> {{ meeting.meeting_date|format_date }}
+                            <i class="bi bi-clock"></i> {{ meeting.meeting_time.strftime('%H:%M') }}
+                        </small><br>
+                        <small><i class="bi bi-geo-alt"></i> {{ meeting.venue }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted">No upcoming meetings scheduled</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Contributions -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-cash-coin"></i> Recent Contributions</span>
+                <a href="#" class="btn btn-sm btn-light">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_contributions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Receipt No</th>
+                                <th>Member</th>
+                                <th>Amount</th>
+                                <th>Month</th>
+                                <th>Payment Date</th>
+                                <th>Method</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contribution in recent_contributions %}
+                            <tr>
+                                <td><strong>{{ contribution.receipt_number }}</strong></td>
+                                <td>{{ contribution.member.full_name }}</td>
+                                <td>{{ contribution.amount|format_currency }}</td>
+                                <td>{{ contribution.contribution_month }}</td>
+                                <td>{{ contribution.payment_date|format_date }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ contribution.payment_method }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No recent contributions</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-lightning"></i> Quick Actions
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="#" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-person-plus"></i> Add Member
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="#" class="btn btn-outline-success w-100">
+                            <i class="bi bi-cash"></i> Record Contribution
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="#" class="btn btn-outline-info w-100">
+                            <i class="bi bi-calendar-plus"></i> Schedule Meeting
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="#" class="btn btn-outline-warning w-100">
+                            <i class="bi bi-file-earmark-text"></i> Generate Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

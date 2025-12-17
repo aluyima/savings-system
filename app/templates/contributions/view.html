@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Contribution Details - Okwezimba Twegatte SACCO{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-receipt"></i> Contribution Details</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h5>Receipt Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Receipt Number:</strong></td>
+                                    <td>{{ contribution.receipt_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Payment Date:</strong></td>
+                                    <td>{{ contribution.payment_date.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Contribution Month:</strong></td>
+                                    <td>{{ contribution.contribution_month }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Member Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Member Number:</strong></td>
+                                    <td>
+                                        <a href="{{ url_for('members.view_member', id=contribution.member.id) }}">
+                                            {{ contribution.member.member_number }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Full Name:</strong></td>
+                                    <td>{{ contribution.member.full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge bg-success">{{ contribution.member.status }}</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <h5>Payment Details</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td width="30%"><strong>Amount Paid:</strong></td>
+                                    <td><h4 class="text-success">UGX {{ "{:,.2f}".format(contribution.amount) }}</h4></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Payment Method:</strong></td>
+                                    <td>
+                                        {% if contribution.payment_method == 'CashDeposit' %}
+                                        <span class="badge bg-warning">Cash Deposit</span>
+                                        {% elif contribution.payment_method == 'AgencyBanking' %}
+                                        <span class="badge bg-success">Agency Banking</span>
+                                        {% elif contribution.payment_method == 'EFT' %}
+                                        <span class="badge bg-primary">EFT</span>
+                                        {% elif contribution.payment_method == 'MobileMoney' %}
+                                        <span class="badge bg-info">Mobile Money</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% if contribution.transaction_reference %}
+                                <tr>
+                                    <td><strong>Transaction Reference:</strong></td>
+                                    <td>{{ contribution.transaction_reference }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if contribution.notes %}
+                                <tr>
+                                    <td><strong>Notes:</strong></td>
+                                    <td>{{ contribution.notes }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h5>Record Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td width="30%"><strong>Recorded By:</strong></td>
+                                    <td>{{ contribution.recorder.full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date Recorded:</strong></td>
+                                    <td>{{ contribution.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                </tr>
+                                {% if contribution.updated_at != contribution.created_at %}
+                                <tr>
+                                    <td><strong>Last Updated:</strong></td>
+                                    <td>{{ contribution.updated_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a href="{{ url_for('contributions.list_contributions') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to List
+                            </a>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('contributions.generate_receipt', id=contribution.id) }}"
+                               class="btn btn-success">
+                                <i class="bi bi-download"></i> Download Receipt
+                            </a>
+                            <a href="{{ url_for('contributions.edit_contribution', id=contribution.id) }}"
+                               class="btn btn-warning">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Quick Actions -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5><i class="bi bi-lightning"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('contributions.member_contributions', member_id=contribution.member.id) }}"
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-list"></i> View All Contributions
+                        </a>
+                        <a href="{{ url_for('members.view_member', id=contribution.member.id) }}"
+                           class="btn btn-outline-info">
+                            <i class="bi bi-person"></i> View Member Profile
+                        </a>
+                        <a href="{{ url_for('contributions.add_contribution') }}"
+                           class="btn btn-outline-success">
+                            <i class="bi bi-plus-circle"></i> Record New Contribution
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Member Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-graph-up"></i> Member Summary</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total Contributions:</strong> {{ contribution.member.contributions|list|length }}</p>
+                    <p><strong>Total Amount:</strong>
+                        UGX {{ "{:,.2f}".format(contribution.member.contributions|list|sum(attribute='amount')) }}
+                    </p>
+                    <p><strong>Member Since:</strong> {{ contribution.member.date_joined.strftime('%d/%m/%Y') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="bi bi-exclamation-triangle"></i> Confirm Delete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this contribution?</p>
+                <p><strong>Receipt Number:</strong> {{ contribution.receipt_number }}</p>
+                <p><strong>Member:</strong> {{ contribution.member.full_name }}</p>
+                <p><strong>Amount:</strong> UGX {{ "{:,.2f}".format(contribution.amount) }}</p>
+                <p class="text-danger"><strong>This action cannot be undone!</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ url_for('contributions.delete_contribution', id=contribution.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Delete Contribution
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

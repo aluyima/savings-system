@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ member.full_name }} - Old Timers Savings Group{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-pencil"></i> Edit Member: {{ member.member_number }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('members.edit_member', id=member.id) }}">
+                        <h5 class="mb-3">Personal Information</h5>
+
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label">Full Name *</label>
+                            <input type="text" class="form-control" id="full_name" name="full_name"
+                                   value="{{ member.full_name }}" required>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="national_id" class="form-label">National ID</label>
+                                <input type="text" class="form-control" id="national_id" name="national_id"
+                                       value="{{ member.national_id or '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="date_of_birth" class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth"
+                                       value="{{ member.date_of_birth if member.date_of_birth else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="gender" class="form-label">Gender *</label>
+                            <select class="form-select" id="gender" name="gender" required>
+                                <option value="Male" {% if member.gender == 'Male' %}selected{% endif %}>Male</option>
+                                <option value="Female" {% if member.gender == 'Female' %}selected{% endif %}>Female</option>
+                            </select>
+                        </div>
+
+                        <hr class="my-4">
+                        <h5 class="mb-3">Contact Information</h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone_primary" class="form-label">Primary Phone *</label>
+                                <input type="tel" class="form-control" id="phone_primary" name="phone_primary"
+                                       value="{{ member.phone_primary }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone_secondary" class="form-label">Secondary Phone</label>
+                                <input type="tel" class="form-control" id="phone_secondary" name="phone_secondary"
+                                       value="{{ member.phone_secondary or '' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   value="{{ member.email or '' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="physical_address" class="form-label">Physical Address</label>
+                            <textarea class="form-control" id="physical_address" name="physical_address"
+                                      rows="2">{{ member.physical_address or '' }}</textarea>
+                        </div>
+
+                        <hr class="my-4">
+                        <h5 class="mb-3">Additional Information</h5>
+
+                        <div class="mb-3">
+                            <label for="occupation" class="form-label">Occupation</label>
+                            <input type="text" class="form-control" id="occupation" name="occupation"
+                                   value="{{ member.occupation or '' }}">
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Save Changes
+                            </button>
+                            <a href="{{ url_for('members.view_member', id=member.id) }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Action Items - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-list-check"></i> Action Items</h2>
+        <a href="{{ url_for('meetings.list_meetings') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Meetings
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="InProgress" {% if status_filter == 'InProgress' %}selected{% endif %}>In Progress</option>
+                        <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Cancelled" {% if status_filter == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                    <a href="{{ url_for('meetings.list_action_items') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Action Items List -->
+    <div class="card">
+        <div class="card-header">
+            <h5>All Action Items</h5>
+        </div>
+        <div class="card-body">
+            {% if action_items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Meeting</th>
+                            <th>Description</th>
+                            <th>Assigned To</th>
+                            <th>Deadline</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in action_items %}
+                        <tr {% if item.deadline and item.deadline < today and item.status not in ['Completed', 'Cancelled'] %}class="table-danger"{% endif %}>
+                            <td>
+                                <a href="{{ url_for('meetings.view_meeting', id=item.meeting_id) }}">
+                                    {{ item.meeting.meeting_date.strftime('%d/%m/%Y') }}
+                                </a>
+                            </td>
+                            <td>{{ item.description }}</td>
+                            <td>{{ item.assignee.full_name }}</td>
+                            <td>
+                                {% if item.deadline %}
+                                {{ item.deadline.strftime('%d/%m/%Y') }}
+                                {% if item.deadline < today and item.status not in ['Completed', 'Cancelled'] %}
+                                <span class="badge bg-danger">Overdue</span>
+                                {% endif %}
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge
+                                    {% if item.status == 'Completed' %}bg-success
+                                    {% elif item.status == 'InProgress' %}bg-primary
+                                    {% elif item.status == 'Cancelled' %}bg-danger
+                                    {% else %}bg-warning{% endif %}">
+                                    {{ item.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if item.status not in ['Completed', 'Cancelled'] %}
+                                <form method="POST" action="{{ url_for('meetings.update_action_item', id=item.id) }}" class="d-inline">
+                                    <select name="status" class="form-select form-select-sm d-inline-block" style="width: auto;" onchange="this.form.submit()">
+                                        <option value="">Update Status...</option>
+                                        <option value="InProgress">In Progress</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Cancelled">Cancelled</option>
+                                    </select>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info" role="alert">
+                <i class="bi bi-info-circle"></i> No action items found.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

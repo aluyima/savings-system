@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Record Repayment - Loan {{ loan.loan_number }} - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4><i class="bi bi-arrow-down-circle"></i> Record Loan Repayment</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Loan Summary -->
+                    <div class="alert alert-info">
+                        <h5>Loan {{ loan.loan_number }}</h5>
+                        <p class="mb-0">
+                            <strong>Member:</strong> {{ loan.member.full_name }} ({{ loan.member.member_number }})<br>
+                            <strong>Total Payable:</strong> {{ format_currency(loan.total_payable) }}<br>
+                            <strong>Total Paid:</strong> {{ format_currency(loan.total_paid or 0) }}<br>
+                            <strong>Outstanding Balance:</strong> <span class="text-danger">{{ format_currency(loan.balance or 0) }}</span>
+                        </p>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('loans.record_repayment', id=loan.id) }}">
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Repayment Amount (UGX) *</label>
+                            <input type="number" class="form-control" id="amount" name="amount"
+                                   step="1000" min="1000" max="{{ loan.balance }}" required
+                                   placeholder="Enter amount paid">
+                            <div class="form-text">Maximum: {{ format_currency(loan.balance) }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_date" class="form-label">Payment Date *</label>
+                            <input type="date" class="form-control" id="payment_date" name="payment_date" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_method" class="form-label">Payment Method *</label>
+                            <select class="form-select" id="payment_method" name="payment_method" required>
+                                <option value="">Select method...</option>
+                                <option value="CashDeposit">Cash Deposit</option>
+                                <option value="AgencyBanking">Agency Banking</option>
+                                <option value="EFT">EFT (Electronic Funds Transfer)</option>
+                                <option value="MobileMoney">Mobile Money</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="transaction_reference" class="form-label">Transaction Reference *</label>
+                            <input type="text" class="form-control" id="transaction_reference" name="transaction_reference"
+                                   required placeholder="Enter transaction reference or payment ID">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2"
+                                      placeholder="Any additional notes about this repayment"></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('loans.view_loan', id=loan.id) }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Record Repayment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="bi bi-info-circle"></i> Repayment Information</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>A receipt will be automatically generated</li>
+                        <li>The amount will be split between principal and interest</li>
+                        <li>Loan status will update to "Completed" when fully paid</li>
+                        <li>All repayments must be deposited to the group bank account</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today as default payment date
+    const dateInput = document.getElementById('payment_date');
+    if (dateInput && !dateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+});
+</script>
+{% endblock %}

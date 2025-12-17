@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Member Contributions - Okwezimba Twegatte SACCO{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('members.list_members') }}">Members</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('members.view_member', id=member.id) }}">{{ member.member_number }}</a></li>
+                    <li class="breadcrumb-item active">Contributions</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-cash-coin"></i> Contributions History</h2>
+            <p class="lead">{{ member.member_number }} - {{ member.full_name }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if current_user.is_executive() or current_user.is_super_admin() %}
+            <a href="{{ url_for('contributions.add_contribution') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Record Contribution
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Contributions</h6>
+                    <h3>{{ total_contributions }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Amount Contributed</h6>
+                    <h3>UGX {{ "{:,.2f}".format(total_amount) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Average Contribution</h6>
+                    <h3>
+                        {% if total_contributions > 0 %}
+                        UGX {{ "{:,.2f}".format(total_amount / total_contributions) }}
+                        {% else %}
+                        UGX 0.00
+                        {% endif %}
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contributions Timeline -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-clock-history"></i> Contribution Timeline</h5>
+                </div>
+                <div class="card-body">
+                    {% if contributions.items %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Receipt No.</th>
+                                    <th>Month</th>
+                                    <th>Amount</th>
+                                    <th>Payment Date</th>
+                                    <th>Method</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for contribution in contributions.items %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('contributions.view_contribution', id=contribution.id) }}">
+                                            {{ contribution.receipt_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ contribution.contribution_month }}</td>
+                                    <td><strong>UGX {{ "{:,.2f}".format(contribution.amount) }}</strong></td>
+                                    <td>{{ contribution.payment_date.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        {% if contribution.payment_method == 'CashDeposit' %}
+                                        <span class="badge bg-warning">Cash Deposit</span>
+                                        {% elif contribution.payment_method == 'AgencyBanking' %}
+                                        <span class="badge bg-success">Agency Banking</span>
+                                        {% elif contribution.payment_method == 'EFT' %}
+                                        <span class="badge bg-primary">EFT</span>
+                                        {% elif contribution.payment_method == 'MobileMoney' %}
+                                        <span class="badge bg-info">Mobile Money</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('contributions.view_contribution', id=contribution.id) }}"
+                                           class="btn btn-sm btn-info" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('contributions.generate_receipt', id=contribution.id) }}"
+                                           class="btn btn-sm btn-success" title="Download Receipt">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if contributions.pages > 1 %}
+                    <nav aria-label="Contributions pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if contributions.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('contributions.member_contributions', member_id=member.id, page=contributions.prev_num) }}">
+                                    Previous
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in contributions.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                                {% if page_num %}
+                                    <li class="page-item {% if page_num == contributions.page %}active{% endif %}">
+                                        <a class="page-link" href="{{ url_for('contributions.member_contributions', member_id=member.id, page=page_num) }}">
+                                            {{ page_num }}
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if contributions.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('contributions.member_contributions', member_id=member.id, page=contributions.next_num) }}">
+                                    Next
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No contributions recorded yet.
+                        {% if current_user.is_executive() or current_user.is_super_admin() %}
+                        <a href="{{ url_for('contributions.add_contribution') }}">Record the first contribution</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

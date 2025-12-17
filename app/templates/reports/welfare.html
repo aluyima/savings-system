@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Welfare Report - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-heart"></i> Welfare Report</h2>
+        <a href="{{ url_for('reports.reports_index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Reports
+        </a>
+    </div>
+
+    <!-- Year Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-10">
+                    <label for="year" class="form-label">Year</label>
+                    <select class="form-select" id="year" name="year">
+                        {% for y in range(2020, 2031) %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h6>Total Requests</h6>
+                    <h4>{{ total_requests }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h6>Approved</h6>
+                    <h4>{{ approved_count }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h6>Pending</h6>
+                    <h4>{{ pending_count }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h6>Rejected</h6>
+                    <h4>{{ rejected_count }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Summary -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6>Total Approved Amount</h6>
+                    <h3 class="text-success">{{ format_currency(total_approved_amount) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6>Total Paid</h6>
+                    <h3 class="text-primary">{{ format_currency(total_paid) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welfare Requests -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Welfare Requests for {{ year }}</h5>
+        </div>
+        <div class="card-body">
+            {% if requests %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Member</th>
+                            <th>Type</th>
+                            <th>Deceased</th>
+                            <th>Relationship</th>
+                            <th>Amount Approved</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in requests %}
+                        <tr>
+                            <td>{{ request.created_at.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ request.member.full_name }}</td>
+                            <td>{{ request.request_type }}</td>
+                            <td>{{ request.deceased_name }}</td>
+                            <td>{{ request.relationship }}</td>
+                            <td>{{ format_currency(request.amount_approved or 0) }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if request.status == 'Approved' else 'warning' if request.status == 'Pending' else 'danger' }}">
+                                    {{ request.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('welfare.view_request', id=request.id) }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No welfare requests found for {{ year }}.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

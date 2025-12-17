@@ -1,0 +1,103 @@
+===================================================================
+OLD TIMERS SAVINGS GROUP - SETUP GUIDE
+===================================================================
+
+Step 1: Activate Virtual Environment
+-------------------------------------
+If you haven't already, activate your virtual environment:
+
+    source venv/bin/activate
+
+(You should see (venv) at the beginning of your command prompt)
+
+
+Step 2: Set FLASK_APP Environment Variable
+-------------------------------------------
+Tell Flask where your application is located:
+
+    export FLASK_APP=run.py
+
+Or for Windows:
+    set FLASK_APP=run.py
+
+
+Step 3: Initialize the Database
+--------------------------------
+Create all database tables:
+
+    flask init_db
+
+You should see: "Database initialized successfully!"
+
+
+Step 4: Create the First Admin User
+------------------------------------
+Create your Super Admin account:
+
+    flask create_admin
+
+You will be prompted to enter:
+- Full Name (e.g., "John Doe")
+- Phone Number (e.g., "0700123456") - This will be your username
+- Initial Password (min 8 characters)
+
+Example:
+    Full Name: Alex Smith
+    Phone Number (e.g., 0700000000): 0756123456
+    Initial Password (min 8 characters): AdminPass123
+
+
+Step 5: Run the Application
+----------------------------
+Start the development server:
+
+    flask run
+
+Or:
+    python run.py
+
+The application will be available at: http://127.0.0.1:5000
+
+
+Step 6: Login
+-------------
+Open your browser and go to: http://127.0.0.1:5000
+
+Login with:
+- Username: Your phone number (e.g., 0756123456)
+- Password: Your initial password
+
+You will be required to change your password on first login.
+
+
+===================================================================
+TROUBLESHOOTING
+===================================================================
+
+Problem: "flask: command not found"
+Solution: Make sure you activated your virtual environment
+          source venv/bin/activate
+
+Problem: "Could not locate a Flask application"
+Solution: Set FLASK_APP environment variable
+          export FLASK_APP=run.py
+
+Problem: Database already exists
+Solution: The database is in instance/oldtimerssavings.db
+          You can delete it and run flask init_db again if needed
+
+Problem: "Super Admin already exists"
+Solution: An admin was already created. Use the existing credentials
+          or delete the database and start over
+
+===================================================================
+QUICK START (All commands in sequence)
+===================================================================
+
+source venv/bin/activate
+export FLASK_APP=run.py
+flask init_db
+flask create_admin
+flask run
+
+===================================================================

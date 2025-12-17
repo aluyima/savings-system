@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Record Membership Fee - Okwezimba Twegatte SACCO{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4><i class="bi bi-credit-card"></i> Record Membership Fee Payment</h4>
+                </div>
+                <div class="card-body">
+                    {% if member.membership_fee_paid and member.membership_fee_receipt %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Already Paid!</strong> This member has already paid the membership fee.
+                        <p class="mb-0">
+                            Receipt: {{ member.membership_fee_receipt }}
+                            {% if member.membership_fee_date %}
+                            | Date: {{ member.membership_fee_date.strftime('%d/%m/%Y') }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    <a href="{{ url_for('membership_fees.list_members') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to List
+                    </a>
+                    {% else %}
+
+                    {% if member.membership_fee_paid and not member.membership_fee_receipt %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Note:</strong> This member is marked as paid but has no receipt. Please record the payment details below to generate a receipt.
+                    </div>
+                    {% endif %}
+                    <!-- Member Information -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5>Member Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td width="30%"><strong>Member Number:</strong></td>
+                                    <td>{{ member.member_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Full Name:</strong></td>
+                                    <td>{{ member.full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date Joined:</strong></td>
+                                    <td>{{ member.date_joined.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td><span class="badge bg-success">{{ member.status }}</span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Payment Form -->
+                    <form method="POST" action="{{ url_for('membership_fees.record_payment', member_id=member.id) }}">
+                        <div class="mb-3">
+                            <label class="form-label">Membership Fee Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">UGX</span>
+                                <input type="text" class="form-control" value="{{ '{:,.0f}'.format(membership_fee) }}" disabled>
+                            </div>
+                            <div class="form-text">One-time membership fee (non-refundable)</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_date" class="form-label">Payment Date *</label>
+                            <input type="date" class="form-control" id="payment_date" name="payment_date" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_method" class="form-label">Payment Method *</label>
+                            <select class="form-select" id="payment_method" name="payment_method" required>
+                                <option value="">Select payment method...</option>
+                                <option value="CashDeposit">Cash Deposit</option>
+                                <option value="AgencyBanking">Agency Banking</option>
+                                <option value="EFT">EFT (Electronic Funds Transfer)</option>
+                                <option value="MobileMoney">Mobile Money</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="transaction_reference" class="form-label">Transaction Reference / Payment ID *</label>
+                            <input type="text" class="form-control" id="transaction_reference" name="transaction_reference"
+                                   required placeholder="Enter transaction ID or reference number">
+                            <div class="form-text">Required: Bank transaction ID or payment reference</div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('membership_fees.list_members') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Record Payment
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="bi bi-info-circle"></i> Information</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul>
+                            <li>Membership fee is a one-time payment of UGX {{ "{:,.0f}".format(membership_fee) }}</li>
+                            <li>A receipt will be automatically generated</li>
+                            <li>All payments must be deposited to the SACCO bank account</li>
+                            <li>Transaction reference is required for audit purposes</li>
+                            <li>Membership fee is non-refundable</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set today's date as default
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentDateInput = document.getElementById('payment_date');
+    if (paymentDateInput && !paymentDateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        paymentDateInput.value = today;
+    }
+});
+</script>
+{% endblock %}

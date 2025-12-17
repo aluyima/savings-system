@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Record Attendance - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-people"></i> Record Attendance</h2>
+        <a href="{{ url_for('meetings.view_meeting', id=meeting.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Meeting
+        </a>
+    </div>
+
+    <!-- Meeting Info -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5>{{ meeting.meeting_type }} Meeting</h5>
+            <p class="mb-0">
+                <strong>Date:</strong> {{ meeting.meeting_date.strftime('%d/%m/%Y') }} at {{ meeting.meeting_time.strftime('%H:%M') }}<br>
+                <strong>Venue:</strong> {{ meeting.venue }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Attendance Form -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5>Member Attendance</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('meetings.record_attendance', id=meeting.id) }}">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th width="5%">#</th>
+                                <th width="35%">Member</th>
+                                <th width="25%">Status</th>
+                                <th width="20%">Arrival Time</th>
+                                <th width="15%">Quick Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in members %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <strong>{{ member.member_number }}</strong> - {{ member.full_name }}
+                                    <input type="hidden" name="member_ids[]" value="{{ member.id }}">
+                                </td>
+                                <td>
+                                    <select class="form-select form-select-sm status-select" name="statuses[]" data-row="{{ loop.index }}">
+                                        {% set existing = existing_attendance.get(member.id) %}
+                                        <option value="Absent" {% if not existing or existing.status == 'Absent' %}selected{% endif %}>Absent</option>
+                                        <option value="Present" {% if existing and existing.status == 'Present' %}selected{% endif %}>Present</option>
+                                        <option value="Excused" {% if existing and existing.status == 'Excused' %}selected{% endif %}>Excused</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    {% set existing = existing_attendance.get(member.id) %}
+                                    <input type="time" class="form-control form-control-sm arrival-time"
+                                           name="arrival_times[]"
+                                           value="{% if existing and existing.arrival_time %}{{ existing.arrival_time.strftime('%H:%M') }}{% endif %}"
+                                           {% if not existing or existing.status != 'Present' %}disabled{% endif %}
+                                           data-row="{{ loop.index }}">
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-success mark-present" data-row="{{ loop.index }}">
+                                        <i class="bi bi-check"></i> Present
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-info mt-3">
+                    <i class="bi bi-info-circle"></i> <strong>Note:</strong> Quorum requirement is 5 members.
+                    Arrival time is only required for members marked as Present.
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('meetings.view_meeting', id=meeting.id) }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Save Attendance
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5);
+
+    // Handle status change
+    document.querySelectorAll('.status-select').forEach(function(select) {
+        select.addEventListener('change', function() {
+            const row = this.dataset.row;
+            const timeInput = document.querySelector(`.arrival-time[data-row="${row}"]`);
+
+            if (this.value === 'Present') {
+                timeInput.disabled = false;
+                if (!timeInput.value) {
+                    timeInput.value = currentTime;
+                }
+            } else {
+                timeInput.disabled = true;
+                timeInput.value = '';
+            }
+        });
+    });
+
+    // Quick mark present button
+    document.querySelectorAll('.mark-present').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const row = this.dataset.row;
+            const statusSelect = document.querySelector(`.status-select[data-row="${row}"]`);
+            const timeInput = document.querySelector(`.arrival-time[data-row="${row}"]`);
+
+            statusSelect.value = 'Present';
+            timeInput.disabled = false;
+            if (!timeInput.value) {
+                timeInput.value = currentTime;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

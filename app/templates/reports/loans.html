@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Loans Report - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-bank"></i> Loans Report</h2>
+        <a href="{{ url_for('reports.reports_index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Reports
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-10">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="Approved" {% if status_filter == 'Approved' %}selected{% endif %}>Approved</option>
+                        <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+                        <option value="FullyRepaid" {% if status_filter == 'FullyRepaid' %}selected{% endif %}>Fully Repaid</option>
+                        <option value="Defaulted" {% if status_filter == 'Defaulted' %}selected{% endif %}>Defaulted</option>
+                        <option value="Rejected" {% if status_filter == 'Rejected' %}selected{% endif %}>Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h6>Total Disbursed</h6>
+                    <h4>{{ format_currency(total_disbursed) }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h6>Total Repaid</h6>
+                    <h4>{{ format_currency(total_repaid) }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h6>Outstanding</h6>
+                    <h4>{{ format_currency(total_outstanding) }}</h4>
+                    <small>{{ active_loans_count }} active loans</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h6>Interest Earned</h6>
+                    <h4>{{ format_currency(total_interest_earned) }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6>Active Loans</h6>
+                    <h3 class="text-primary">{{ active_loans_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6>Defaulted Loans</h6>
+                    <h3 class="text-danger">{{ defaulted_loans_count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loans List -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Loan Details</h5>
+        </div>
+        <div class="card-body">
+            {% if loans %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Loan No.</th>
+                            <th>Member</th>
+                            <th>Amount</th>
+                            <th>Interest</th>
+                            <th>Total Payable</th>
+                            <th>Repaid</th>
+                            <th>Balance</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in loans %}
+                        <tr>
+                            <td>{{ loan.loan_number }}</td>
+                            <td>{{ loan.member.full_name }}</td>
+                            <td>{{ format_currency(loan.amount_approved) }}</td>
+                            <td>{{ loan.interest_rate }}% pm</td>
+                            <td>{{ format_currency(loan.total_payable) }}</td>
+                            <td>{{ format_currency(loan.total_paid) }}</td>
+                            <td>{{ format_currency(loan.balance) }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if loan.status == 'FullyRepaid' else 'warning' if loan.status == 'Active' else 'secondary' }}">
+                                    {{ loan.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('loans.view_loan', id=loan.id) }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No loans found.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

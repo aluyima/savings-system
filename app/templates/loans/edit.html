@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Revise Loan Application - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h4><i class="bi bi-pencil"></i> Revise & Resubmit Loan Application</h4>
+                    <small>Loan Number: {{ loan.loan_number }}</small>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> <strong>Your loan was returned for revision.</strong>
+                        <br>Please update your application and resubmit.
+                    </div>
+
+                    <form method="POST" action="{{ url_for('loans.edit_loan', id=loan.id) }}">
+                        <div class="mb-3">
+                            <label for="amount_requested" class="form-label">Loan Amount Requested (UGX) *</label>
+                            <input type="number" class="form-control" id="amount_requested" name="amount_requested"
+                                   value="{{ loan.amount_requested }}"
+                                   step="1000" min="10000" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="purpose" class="form-label">Loan Purpose *</label>
+                            <textarea class="form-control" id="purpose" name="purpose" rows="3" required>{{ loan.purpose }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="repayment_period_months" class="form-label">Repayment Period (Months) *</label>
+                            <select class="form-select" id="repayment_period_months" name="repayment_period_months" required>
+                                <option value="1" {% if loan.repayment_period_months == 1 %}selected{% endif %}>1 Month</option>
+                                <option value="2" {% if loan.repayment_period_months == 2 %}selected{% endif %}>2 Months (Maximum)</option>
+                            </select>
+                            <div class="form-text">Interest Rate: 5% per month</div>
+                        </div>
+
+                        <hr>
+
+                        <h5>Loan Security</h5>
+                        <div class="mb-3">
+                            <label for="security_type" class="form-label">Security Type *</label>
+                            <select class="form-select" id="security_type" name="security_type" required>
+                                <option value="Guarantors" {% if loan.security_type == 'Guarantors' %}selected{% endif %}>Two Guarantors</option>
+                                <option value="Collateral" {% if loan.security_type == 'Collateral' %}selected{% endif %}>Collateral</option>
+                            </select>
+                        </div>
+
+                        <!-- Guarantors Section -->
+                        <div id="guarantors-section" {% if loan.security_type != 'Guarantors' %}style="display:none;"{% endif %}>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="guarantor1_id" class="form-label">First Guarantor *</label>
+                                    <select class="form-select" id="guarantor1_id" name="guarantor1_id">
+                                        <option value="">Choose first guarantor...</option>
+                                        {% for member in members %}
+                                        {% if member.id != loan.member_id %}
+                                        <option value="{{ member.id }}" {% if loan.guarantor1_id == member.id %}selected{% endif %}>
+                                            {{ member.member_number }} - {{ member.full_name }}
+                                        </option>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="guarantor2_id" class="form-label">Second Guarantor *</label>
+                                    <select class="form-select" id="guarantor2_id" name="guarantor2_id">
+                                        <option value="">Choose second guarantor...</option>
+                                        {% for member in members %}
+                                        {% if member.id != loan.member_id %}
+                                        <option value="{{ member.id }}" {% if loan.guarantor2_id == member.id %}selected{% endif %}>
+                                            {{ member.member_number }} - {{ member.full_name }}
+                                        </option>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="alert alert-warning">
+                                <small><i class="bi bi-exclamation-triangle"></i> Both guarantors must be <strong>qualified</strong> active members (5+ consecutive months of contributions) and must approve your loan before executive review.</small>
+                            </div>
+                        </div>
+
+                        <!-- Collateral Section -->
+                        <div id="collateral-section" {% if loan.security_type != 'Collateral' %}style="display:none;"{% endif %}>
+                            <div class="mb-3">
+                                <label for="collateral_description" class="form-label">Collateral Description *</label>
+                                <textarea class="form-control" id="collateral_description" name="collateral_description" rows="3"
+                                          placeholder="Describe the collateral (e.g., Land title, vehicle logbook, etc.)">{{ loan.collateral_description }}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="collateral_value" class="form-label">Estimated Collateral Value (UGX) *</label>
+                                <input type="number" class="form-control" id="collateral_value" name="collateral_value"
+                                       value="{{ loan.collateral_value }}"
+                                       step="10000" min="0" placeholder="Enter estimated value">
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('loans.view_loan', id=loan.id) }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Resubmit Application
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle security type sections
+document.getElementById('security_type').addEventListener('change', function() {
+    var guarantorsSection = document.getElementById('guarantors-section');
+    var collateralSection = document.getElementById('collateral-section');
+
+    if (this.value === 'Guarantors') {
+        guarantorsSection.style.display = 'block';
+        collateralSection.style.display = 'none';
+        document.getElementById('guarantor1_id').required = true;
+        document.getElementById('guarantor2_id').required = true;
+        document.getElementById('collateral_description').required = false;
+        document.getElementById('collateral_value').required = false;
+    } else {
+        guarantorsSection.style.display = 'none';
+        collateralSection.style.display = 'block';
+        document.getElementById('guarantor1_id').required = false;
+        document.getElementById('guarantor2_id').required = false;
+        document.getElementById('collateral_description').required = true;
+        document.getElementById('collateral_value').required = true;
+    }
+});
+</script>
+{% endblock %}

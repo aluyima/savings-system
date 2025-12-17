@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Operational Expenses - Old Timers Savings Club Kiteezi{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-receipt"></i> Operational Expenses</h2>
+        <a href="{{ url_for('expenses.record_expense') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Record Expense
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-select" id="category" name="category">
+                        <option value="">All Categories</option>
+                        <option value="Stationery" {% if category_filter == 'Stationery' %}selected{% endif %}>Stationery</option>
+                        <option value="Airtime" {% if category_filter == 'Airtime' %}selected{% endif %}>Airtime</option>
+                        <option value="Transport" {% if category_filter == 'Transport' %}selected{% endif %}>Transport</option>
+                        <option value="Meetings" {% if category_filter == 'Meetings' %}selected{% endif %}>Meetings</option>
+                        <option value="Bank Charges" {% if category_filter == 'Bank Charges' %}selected{% endif %}>Bank Charges</option>
+                        <option value="Office Supplies" {% if category_filter == 'Office Supplies' %}selected{% endif %}>Office Supplies</option>
+                        <option value="Other" {% if category_filter == 'Other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="year" class="form-label">Year</label>
+                    <select class="form-select" id="year" name="year">
+                        {% for y in range(2020, 2031) %}
+                        <option value="{{ y }}" {% if year_filter == y %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="month" class="form-label">Month</label>
+                    <select class="form-select" id="month" name="month">
+                        <option value="">All Months</option>
+                        {% for m in range(1, 13) %}
+                        <option value="{{ m }}" {% if month_filter == m %}selected{% endif %}>
+                            {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m] }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h6>Total Expenses</h6>
+                    <h3>{{ format_currency(total_expenses) }}</h3>
+                    <small>{{ expenses|length }} transactions</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h6>Expenses by Category</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for category, total in category_totals %}
+                        <div class="col-md-6 mb-2">
+                            <strong>{{ category }}:</strong> {{ format_currency(total) }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expenses List -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Expense Records</h5>
+        </div>
+        <div class="card-body">
+            {% if expenses %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Expense No.</th>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Payee</th>
+                            <th>Amount</th>
+                            <th>Payment Method</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for expense in expenses %}
+                        <tr>
+                            <td><strong>{{ expense.expense_number }}</strong></td>
+                            <td>{{ expense.expense_date.strftime('%d/%m/%Y') }}</td>
+                            <td><span class="badge bg-secondary">{{ expense.expense_category }}</span></td>
+                            <td>{{ expense.description|truncate_string(40) }}</td>
+                            <td>{{ expense.payee }}</td>
+                            <td><strong>{{ format_currency(expense.amount) }}</strong></td>
+                            <td>{{ expense.payment_method }}</td>
+                            <td>
+                                <a href="{{ url_for('expenses.view_expense', id=expense.id) }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('expenses.edit_expense', id=expense.id) }}" class="btn btn-sm btn-warning">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-active">
+                            <td colspan="5" class="text-end"><strong>Total:</strong></td>
+                            <td colspan="3"><strong>{{ format_currency(total_expenses) }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No expenses recorded for the selected period.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
