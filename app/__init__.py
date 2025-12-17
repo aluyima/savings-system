@@ -25,7 +25,22 @@ def create_app(config_name='development'):
 
     # Configuration
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///oldtimerssavings.db')
+
+    # Database configuration with absolute path support
+    database_url = os.getenv('DATABASE_URL', 'sqlite:///oldtimerssavings.db')
+    # If using SQLite and path is relative, convert to absolute path
+    if database_url.startswith('sqlite:///') and not database_url.startswith('sqlite:////'):
+        # Extract the relative path after sqlite:///
+        db_path = database_url.replace('sqlite:///', '', 1)
+        # If it's not already an absolute path, make it relative to the app's root directory
+        if not os.path.isabs(db_path):
+            base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+            db_path = os.path.join(base_dir, db_path)
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(db_path), exist_ok=True)
+            database_url = f'sqlite:///{db_path}'
+
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', 10 * 1024 * 1024))  # 10 MB
     app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', 'app/static/uploads')

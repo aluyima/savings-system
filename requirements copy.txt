@@ -1,0 +1,22 @@
+﻿# requirements-minimal.txt
+# Bare minimum for core functionality
+# Use this if you run into the 512 MB disk space limit
+
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+reportlab==4.0.7
+python-dotenv==1.0.0
+phonenumbers==8.13.26
+pytz==2023.3.post1
+
+# Total size: ~30 MB
+# Tradeoffs:
+# - No Excel export (use CSV instead with built-in csv module)
+# - No image processing (accept PDFs only)
+# - No advanced caching
+# - No rate limiting
+Flask-Mail==0.10.0
+requests==2.32.5
+python-dateutil==2.8.2

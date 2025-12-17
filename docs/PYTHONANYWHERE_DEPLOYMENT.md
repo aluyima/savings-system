@@ -129,15 +129,18 @@ nano .env
 
 ```bash
 # Flask Configuration
-SECRET_KEY=your-super-secret-key-change-this-in-production
+SECRET_KEY=396c6bb96740299d4709507f5d8470a8
 FLASK_ENV=production
 
 # Database (SQLite for free account)
-DATABASE_URL=sqlite:///instance/oldtimerssavings.db
+# Use absolute path for PythonAnywhere
+DATABASE_URL=sqlite:////home/oldtimers/savings-system/instance/oldtimerssavings.db
+# OR use relative path (will be converted to absolute automatically):
+# DATABASE_URL=sqlite:///instance/oldtimerssavings.db
 
 # Application Settings
 APP_NAME=Old Timers Savings Club Kiteezi
-BASE_URL=https://yourusername.pythonanywhere.com
+BASE_URL=https://oldtimers.pythonanywhere.com
 
 # Session Configuration
 SESSION_COOKIE_SECURE=True
@@ -158,13 +161,13 @@ MAIL_SERVER=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USE_TLS=True
 MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=your-gmail-app-password
+MAIL_PASSWORD=CLouds#122
 MAIL_DEFAULT_SENDER=Old Timers Savings Club <noreply@oldtimerssavings.org>
 
 # Optional: SMS Configuration (Africa's Talking)
 SMS_ENABLED=False
 SMS_API_URL=https://api.africastalking.com/version1/messaging
-SMS_API_KEY=your-api-key
+SMS_API_KEY=atsk_9cb2059497df47f74dfc948284b7f8da3c862a523ced1f1773ce8251411ab730f51fd350
 SMS_SENDER_ID=OTSC
 
 # Optional: WhatsApp Configuration
@@ -410,7 +413,41 @@ tail -50 /var/log/yourusername.pythonanywhere.com.error.log
 
 ### Issue: Database Errors
 
+**Error: "unable to open database file"**
+
+This means SQLite cannot create or access the database file, usually due to:
+1. Missing instance directory
+2. Incorrect permissions
+3. Wrong database path in .env
+
 **Solution**:
+```bash
+cd ~/savings-system
+workon savings-env
+
+# Create instance directory with proper permissions
+mkdir -p instance
+chmod 755 instance
+
+# Verify your .env has the correct DATABASE_URL
+# Should be either:
+# DATABASE_URL=sqlite:////home/oldtimers/savings-system/instance/oldtimerssavings.db
+# OR
+# DATABASE_URL=sqlite:///instance/oldtimerssavings.db (will be converted to absolute)
+
+# Initialize database
+flask shell
+```
+
+```python
+from app import db
+db.create_all()
+exit()
+```
+
+Then reload web app.
+
+**Other database errors**:
 ```bash
 cd ~/savings-system
 workon savings-env
