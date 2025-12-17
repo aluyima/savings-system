@@ -307,6 +307,25 @@ Visit: `https://yourusername.pythonanywhere.com`
 
 ### 10.2 Create Super Admin User
 
+**Option 1: Using the CLI Command (Recommended)**
+
+In PythonAnywhere Bash console:
+
+```bash
+cd ~/savings-system
+workon savings-env
+flask create-superadmin
+```
+
+Follow the prompts to enter:
+- Username (e.g., `admin`)
+- Phone number (e.g., `0700000000`)
+- Email (default: `admin@oldtimerssavings.org`)
+- Full name (default: `System Administrator`)
+- Password (will be hidden, requires confirmation)
+
+**Option 2: Manual Creation via Flask Shell**
+
 In PythonAnywhere Bash console:
 
 ```bash
@@ -319,20 +338,34 @@ In Flask shell:
 ```python
 from app import db
 from app.models.user import User
-from werkzeug.security import generate_password_hash
+from app.models.member import Member
+from datetime import date
 
-# Create super admin
-admin = User(
-    username='admin',
+# First, create a Member for the admin
+admin_member = Member(
+    full_name='System Administrator',
+    phone_primary='0700000000',
     email='admin@oldtimerssavings.org',
-    password=generate_password_hash('ChangeThisPassword123!'),
-    role='SuperAdmin'
+    date_joined=date.today(),
+    status='Active',
+    membership_fee_paid=True
 )
 
-db.session.add(admin)
+db.session.add(admin_member)
+db.session.flush()  # Get the member ID
+
+# Now create the User linked to this member
+admin_user = User(
+    member_id=admin_member.id,
+    username='admin',
+    role='SuperAdmin'
+)
+admin_user.set_password('ChangeThisPassword123!')
+
+db.session.add(admin_user)
 db.session.commit()
 
-print(f"Admin created: {admin.username}")
+print(f"Admin created: {admin_user.username} (Member: {admin_member.full_name})")
 exit()
 ```
 
@@ -648,6 +681,9 @@ git pull origin main
 
 # Install/update packages
 pip install -r requirements.txt
+
+# Create super admin user
+flask create-superadmin
 
 # Open Flask shell
 flask shell

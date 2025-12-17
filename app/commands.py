@@ -7,6 +7,7 @@ from flask import current_app
 from app import db
 from app.utils.loan_reminders import check_and_send_due_date_reminders, get_overdue_loans, get_upcoming_due_loans
 from datetime import date
+import getpass
 
 
 def register_commands(app):
@@ -99,5 +100,84 @@ def register_commands(app):
                     click.echo(f'  Due Date: {loan.due_date.strftime("%d/%m/%Y")} ({days_until_due} days)')
                     click.echo(f'  Balance: UGX {loan.balance:,.0f}')
                     click.echo('')
+
+        click.echo('=' * 60)
+
+    @app.cli.command('create-superadmin')
+    @click.option('--username', prompt='Username', help='Admin username')
+    @click.option('--phone', prompt='Phone number', help='Admin phone number')
+    @click.option('--email', prompt='Email', default='admin@oldtimerssavings.org', help='Admin email')
+    @click.option('--name', prompt='Full name', default='System Administrator', help='Admin full name')
+    def create_superadmin_command(username, phone, email, name):
+        """Create a super admin user"""
+        click.echo('=' * 60)
+        click.echo('Create Super Admin User')
+        click.echo('=' * 60)
+        click.echo('')
+
+        with app.app_context():
+            from app.models.user import User
+            from app.models.member import Member
+
+            # Check if user already exists
+            existing_user = User.query.filter_by(username=username).first()
+            if existing_user:
+                click.secho(f'Error: User with username "{username}" already exists!', fg='red')
+                return
+
+            # Check if phone is already used
+            existing_member = Member.query.filter_by(phone_primary=phone).first()
+            if existing_member:
+                click.secho(f'Error: A member with phone number "{phone}" already exists!', fg='red')
+                return
+
+            # Get password (with confirmation)
+            password = click.prompt('Password', hide_input=True, confirmation_prompt=True)
+
+            if len(password) < 8:
+                click.secho('Error: Password must be at least 8 characters long!', fg='red')
+                return
+
+            try:
+                # Create member first
+                admin_member = Member(
+                    full_name=name,
+                    phone_primary=phone,
+                    email=email,
+                    date_joined=date.today(),
+                    status='Active',
+                    membership_fee_paid=True
+                )
+
+                db.session.add(admin_member)
+                db.session.flush()  # Get the member ID
+
+                # Create user linked to member
+                admin_user = User(
+                    member_id=admin_member.id,
+                    username=username,
+                    role='SuperAdmin',
+                    must_change_password=False  # Don't force password change for manually created admin
+                )
+                admin_user.set_password(password)
+
+                db.session.add(admin_user)
+                db.session.commit()
+
+                click.echo('')
+                click.secho('✓ Super admin created successfully!', fg='green')
+                click.echo('')
+                click.echo(f'  Username: {admin_user.username}')
+                click.echo(f'  Member: {admin_member.full_name} ({admin_member.member_number})')
+                click.echo(f'  Phone: {admin_member.phone_primary}')
+                click.echo(f'  Email: {admin_member.email}')
+                click.echo(f'  Role: {admin_user.role}')
+                click.echo('')
+                click.secho('You can now log in with these credentials.', fg='green')
+
+            except Exception as e:
+                db.session.rollback()
+                click.echo('')
+                click.secho(f'✗ Error creating super admin: {str(e)}', fg='red')
 
         click.echo('=' * 60)
