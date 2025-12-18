@@ -143,8 +143,9 @@ APP_NAME=Old Timers Savings Club Kiteezi
 BASE_URL=https://oldtimers.pythonanywhere.com
 
 # Session Configuration
+# IMPORTANT: Set to True for production HTTPS, False for local HTTP development
 SESSION_COOKIE_SECURE=True
-SESSION_COOKIE_HTTPONLY=True
+SESSION_COOKIE_SAMESITE=Lax
 PERMANENT_SESSION_LIFETIME=1800
 
 # System Configuration
@@ -542,6 +543,44 @@ pip install -r requirements.txt --upgrade
 
 Then reload web app.
 
+### Issue: Cannot Login on Mobile/Smartphone (Works on Laptop)
+
+**Symptoms**: Login works on laptop but fails on smartphone with same credentials.
+
+**Cause**: Session cookie configuration issue. The `SESSION_COOKIE_SECURE` setting affects how cookies are sent.
+
+**Solution**:
+
+1. Check your `.env` file on PythonAnywhere:
+```bash
+nano .env
+```
+
+2. Ensure you have these session settings:
+```bash
+SESSION_COOKIE_SECURE=True
+SESSION_COOKIE_SAMESITE=Lax
+```
+
+3. **Important**: Make sure you're accessing via HTTPS on your phone:
+   - ✅ Correct: `https://oldtimers.pythonanywhere.com`
+   - ❌ Wrong: `http://oldtimers.pythonanywhere.com` (no 's')
+
+4. If still not working, try setting `SESSION_COOKIE_SAMESITE=None` temporarily:
+```bash
+SESSION_COOKIE_SAMESITE=None
+```
+
+5. Clear browser cache/cookies on your smartphone:
+   - Safari (iOS): Settings > Safari > Clear History and Website Data
+   - Chrome (Android): Settings > Privacy > Clear browsing data
+
+6. Reload the web app on PythonAnywhere
+
+7. Try logging in again from your smartphone
+
+**Note**: The default `SESSION_COOKIE_SECURE=False` in development allows HTTP (localhost). In production with HTTPS, it should be `True`.
+
 ### Issue: Scheduled Task Not Running
 
 **Solution**:
@@ -797,6 +836,18 @@ Complete deployment steps:
 
 **Your Site**: `https://yourusername.pythonanywhere.com`
 
+**Mobile Access**: Fully optimized for smartphones and tablets!
+
 **Status**: Ready to deploy! 🚀
 
-For detailed documentation, see `docs/INDEX.md`.
+### Important Notes
+
+✅ **Mobile-Optimized**: The system is now fully responsive and works great on smartphones
+✅ **HTTPS Enabled**: Secure access from any device
+✅ **Session Management**: Proper cookie configuration for mobile browsers
+✅ **Touch-Friendly**: All buttons and forms optimized for touch screens
+
+For detailed documentation, see:
+- `docs/INDEX.md` - Main documentation index
+- `docs/MOBILE_OPTIMIZATION.md` - Mobile usage guide
+- `docs/MOBILE_LOGIN_TROUBLESHOOTING.md` - Mobile login issues

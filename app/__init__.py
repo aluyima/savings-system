@@ -47,10 +47,16 @@ def create_app(config_name='development'):
     app.config['TIMEZONE'] = pytz.timezone(os.getenv('TIMEZONE', 'Africa/Kampala'))
 
     # Session configuration
-    app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True'
+    # SESSION_COOKIE_SECURE should be True only when using HTTPS
+    # For local development (HTTP), it should be False
+    session_secure = os.getenv('SESSION_COOKIE_SECURE', 'False') == 'True'
+    app.config['SESSION_COOKIE_SECURE'] = session_secure
     app.config['SESSION_COOKIE_HTTPONLY'] = True
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['SESSION_COOKIE_SAMESITE'] = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax')
     app.config['PERMANENT_SESSION_LIFETIME'] = int(os.getenv('PERMANENT_SESSION_LIFETIME', 1800))
+
+    # Session cookie name (helps avoid conflicts)
+    app.config['SESSION_COOKIE_NAME'] = 'oldtimers_session'
 
     # Pagination
     app.config['ITEMS_PER_PAGE'] = int(os.getenv('ITEMS_PER_PAGE', 50))

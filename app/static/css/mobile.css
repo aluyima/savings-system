@@ -1,0 +1,446 @@
+/**
+ * Mobile-Responsive CSS for Old Timers Savings System
+ * Optimizes the application for smartphone and tablet use
+ */
+
+/* ===========================
+   Mobile Navigation
+   =========================== */
+@media (max-width: 991.98px) {
+    /* Ensure navbar toggler is visible */
+    .navbar-toggler {
+        display: block;
+        border: none;
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* Stack navbar items vertically on mobile */
+    .navbar-collapse {
+        background-color: #212529;
+        margin: 0 -1rem;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        margin-top: 0.5rem;
+    }
+
+    .navbar-nav .nav-link {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .navbar-nav .nav-link:last-child {
+        border-bottom: none;
+    }
+
+    /* Better spacing for user info on mobile */
+    .navbar-text {
+        display: block;
+        padding: 0.75rem 1rem;
+        color: #fff !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* ===========================
+   Form Improvements
+   =========================== */
+@media (max-width: 768px) {
+    /* Prevent iOS zoom on input focus */
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="number"],
+    input[type="password"],
+    input[type="date"],
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+
+    /* Better form layout on mobile */
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .form-control,
+    .form-select {
+        min-height: 44px;
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* Stack form buttons vertically */
+    .form-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+    }
+}
+
+/* ===========================
+   Table Improvements
+   =========================== */
+@media (max-width: 768px) {
+    /* Make all tables scrollable */
+    .table-responsive {
+        display: block !important;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Reduce table font size */
+    .table {
+        font-size: 0.875rem;
+    }
+
+    .table th,
+    .table td {
+        padding: 0.5rem;
+        white-space: nowrap;
+    }
+
+    /* Hide less critical columns on mobile */
+    .table .hide-mobile {
+        display: none !important;
+    }
+
+    /* Make action buttons smaller on mobile */
+    .table .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    /* Stack action buttons in table cells */
+    .table .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .table .btn-group .btn {
+        width: 100%;
+        text-align: left;
+    }
+}
+
+@media (max-width: 576px) {
+    /* Even smaller tables on very small screens */
+    .table {
+        font-size: 0.75rem;
+    }
+
+    .table th,
+    .table td {
+        padding: 0.375rem;
+    }
+}
+
+/* ===========================
+   Card Improvements
+   =========================== */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 1rem;
+        border-radius: 0.5rem;
+    }
+
+    .card-header {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    /* Stack card columns vertically */
+    .row > .col-md-6,
+    .row > .col-md-4,
+    .row > .col-md-3 {
+        margin-bottom: 1rem;
+    }
+}
+
+/* ===========================
+   Button Improvements
+   =========================== */
+@media (max-width: 768px) {
+    /* Larger touch targets */
+    .btn {
+        min-height: 44px;
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+    }
+
+    .btn-sm {
+        min-height: 38px;
+        padding: 0.375rem 0.75rem;
+    }
+
+    /* Stack button groups vertically */
+    .btn-toolbar {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .btn-toolbar .btn {
+        width: 100%;
+    }
+
+    /* Page action buttons */
+    .page-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .page-actions .btn {
+        width: 100%;
+    }
+}
+
+/* ===========================
+   Modal Improvements
+   =========================== */
+@media (max-width: 768px) {
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+
+    .modal-header {
+        padding: 1rem;
+    }
+
+    .modal-body {
+        padding: 1rem;
+    }
+
+    .modal-footer {
+        padding: 0.75rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+        margin: 0;
+    }
+}
+
+/* ===========================
+   Dashboard Improvements
+   =========================== */
+@media (max-width: 768px) {
+    /* Stack dashboard cards */
+    .dashboard-card {
+        margin-bottom: 1rem;
+    }
+
+    /* Better stat card layout */
+    .stat-card {
+        text-align: center;
+        padding: 1.5rem 1rem;
+    }
+
+    .stat-card h3 {
+        font-size: 1.5rem;
+    }
+
+    .stat-card p {
+        font-size: 0.875rem;
+    }
+}
+
+/* ===========================
+   Pagination Improvements
+   =========================== */
+@media (max-width: 768px) {
+    .pagination {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .pagination .page-item {
+        flex: 0 0 auto;
+    }
+
+    .pagination .page-link {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    /* Hide page numbers on very small screens, keep only prev/next */
+    @media (max-width: 576px) {
+        .pagination .page-item:not(.disabled):not(.active) {
+            display: none;
+        }
+
+        .pagination .page-item.active,
+        .pagination .page-item:first-child,
+        .pagination .page-item:last-child {
+            display: block;
+        }
+    }
+}
+
+/* ===========================
+   Alert Improvements
+   =========================== */
+@media (max-width: 768px) {
+    .alert {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .alert .btn-close {
+        padding: 0.5rem;
+    }
+}
+
+/* ===========================
+   Filter/Search Improvements
+   =========================== */
+@media (max-width: 768px) {
+    /* Stack filter columns vertically */
+    .filter-form .col-md-3,
+    .filter-form .col-md-4 {
+        margin-bottom: 0.75rem;
+    }
+
+    /* Full width search/filter buttons */
+    .filter-form .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* ===========================
+   Typography Improvements
+   =========================== */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    h3 {
+        font-size: 1.25rem;
+    }
+
+    h4 {
+        font-size: 1.125rem;
+    }
+
+    /* Better heading spacing */
+    h1, h2, h3, h4, h5, h6 {
+        margin-bottom: 1rem;
+    }
+}
+
+/* ===========================
+   Page Header Improvements
+   =========================== */
+@media (max-width: 768px) {
+    .d-flex.justify-content-between {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1rem;
+    }
+
+    .d-flex.justify-content-between .btn {
+        width: 100%;
+    }
+}
+
+/* ===========================
+   Badge and Status Improvements
+   =========================== */
+.badge {
+    font-size: 0.875rem;
+    padding: 0.375em 0.65em;
+}
+
+/* ===========================
+   Touch Target Improvements
+   =========================== */
+/* Minimum touch target size (44x44px per Apple HIG) */
+a:not(.btn),
+button:not(.btn) {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ===========================
+   Loading States
+   =========================== */
+.loading {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+/* ===========================
+   Accessibility Improvements
+   =========================== */
+/* Better focus indicators for keyboard/touch navigation */
+a:focus,
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+/* Skip to content link for accessibility */
+.skip-to-content {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #000;
+    color: #fff;
+    padding: 8px;
+    text-decoration: none;
+    z-index: 100;
+}
+
+.skip-to-content:focus {
+    top: 0;
+}
+
+/* ===========================
+   Print Styles
+   =========================== */
+@media print {
+    .navbar,
+    .btn,
+    .pagination,
+    .filter-form {
+        display: none !important;
+    }
+
+    .card {
+        border: 1px solid #000;
+        page-break-inside: avoid;
+    }
+
+    .table {
+        font-size: 10pt;
+    }
+}
