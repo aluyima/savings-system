@@ -9,9 +9,19 @@ Complete documentation for the savings group management system.
 ## 🚀 Getting Started
 
 ### Essential Guides
-1. **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide for new users
-2. **[README.md](README.md)** - Main project README
-3. **[IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md)** - System implementation overview
+1. **[USER_GUIDE.md](USER_GUIDE.md)** ⭐ - **Complete User Manual** (all features explained)
+2. **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick reference for common tasks
+3. **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide for new users
+4. **[README.md](README.md)** - Main project README
+5. **[IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md)** - System implementation overview
+
+### Deployment
+6. **[PYTHONANYWHERE_DEPLOYMENT.md](PYTHONANYWHERE_DEPLOYMENT.md)** - Complete deployment guide for PythonAnywhere
+
+### Mobile Access
+7. **[MOBILE_OPTIMIZATION.md](MOBILE_OPTIMIZATION.md)** - Mobile usage guide
+8. **[MOBILE_LOGIN_TROUBLESHOOTING.md](MOBILE_LOGIN_TROUBLESHOOTING.md)** - Fix mobile login issues
+9. **[MOBILE_TESTING_CHECKLIST.md](MOBILE_TESTING_CHECKLIST.md)** - Mobile testing checklist
 
 ---
 
@@ -116,6 +126,21 @@ Complete documentation for the savings group management system.
 
 ### I want to...
 
+**Learn how to use the system (all features)**
+→ [USER_GUIDE.md](USER_GUIDE.md) ⭐⭐⭐
+
+**Quick reference for common tasks**
+→ [QUICK_REFERENCE.md](QUICK_REFERENCE.md) ⭐⭐
+
+**Deploy the system to PythonAnywhere**
+→ [PYTHONANYWHERE_DEPLOYMENT.md](PYTHONANYWHERE_DEPLOYMENT.md) ⭐⭐
+
+**Use the system on my smartphone**
+→ [MOBILE_OPTIMIZATION.md](MOBILE_OPTIMIZATION.md) ⭐
+
+**Fix mobile login issues**
+→ [MOBILE_LOGIN_TROUBLESHOOTING.md](MOBILE_LOGIN_TROUBLESHOOTING.md)
+
 **Set up the system for the first time**
 → [QUICKSTART.md](QUICKSTART.md)
 
@@ -184,38 +209,62 @@ Complete documentation for the savings group management system.
 
 ## 🎯 Most Important Documents
 
-### Top 5 Must-Read Documents
+### Top 10 Must-Read Documents
 
-1. **[README_LOAN_REMINDERS.md](README_LOAN_REMINDERS.md)** ⭐
+1. **[USER_GUIDE.md](USER_GUIDE.md)** ⭐⭐⭐
+   - Complete user manual covering ALL features
+   - Essential for all users
+
+2. **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** ⭐⭐
+   - Quick reference for common tasks
+   - Keep handy for daily use
+
+3. **[PYTHONANYWHERE_DEPLOYMENT.md](PYTHONANYWHERE_DEPLOYMENT.md)** ⭐⭐
+   - Complete deployment guide
+   - Essential for setup and troubleshooting
+
+4. **[MOBILE_OPTIMIZATION.md](MOBILE_OPTIMIZATION.md)** ⭐⭐
+   - Mobile usage guide
+   - Critical for smartphone users
+
+5. **[README_LOAN_REMINDERS.md](README_LOAN_REMINDERS.md)** ⭐
    - Quick start for loan payment reminders
    - Essential for daily operations
 
-2. **[QUICK_START_GUARANTOR_WORKFLOW.md](QUICK_START_GUARANTOR_WORKFLOW.md)**
+6. **[QUICK_START_GUARANTOR_WORKFLOW.md](QUICK_START_GUARANTOR_WORKFLOW.md)**
    - Step-by-step guarantor approval process
    - Critical for loan processing
 
-3. **[NOTIFICATION_CONFIGURATION.md](NOTIFICATION_CONFIGURATION.md)**
+7. **[NOTIFICATION_CONFIGURATION.md](NOTIFICATION_CONFIGURATION.md)**
    - Email/SMS/WhatsApp setup
    - Required for all notifications
 
-4. **[QUICKSTART.md](QUICKSTART.md)**
+8. **[MOBILE_LOGIN_TROUBLESHOOTING.md](MOBILE_LOGIN_TROUBLESHOOTING.md)**
+   - Fix mobile login issues
+   - Important for mobile access
+
+9. **[QUICKSTART.md](QUICKSTART.md)**
    - System setup and first steps
    - For new administrators
 
-5. **[SESSION_SUMMARY_2025-12-17.md](SESSION_SUMMARY_2025-12-17.md)**
-   - Complete overview of recent updates
-   - Understand what's new
+10. **[SESSION_SUMMARY_2025-12-17.md](SESSION_SUMMARY_2025-12-17.md)**
+    - Complete overview of recent updates
+    - Understand what's new
 
 ---
 
 ## 📊 Documentation Statistics
 
-- **Total Documents**: 20 files
-- **Setup Guides**: 4 files
+- **Total Documents**: 29 files
+- **User Guides**: 2 files (USER_GUIDE.md, QUICK_REFERENCE.md)
+- **Setup & Deployment**: 4 files
+- **Mobile Guides**: 3 files
 - **Feature Documentation**: 9 files
 - **Bug Fix Reports**: 3 files
-- **User Guides**: 4 files
+- **Configuration Guides**: 4 files
 - **Session Reports**: 1 file
+- **Testing**: 1 file
+- **Plus Index**: 1 file (this file)
 
 ---
 

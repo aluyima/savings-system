@@ -1,0 +1,55 @@
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Flask instance folder (contains database)
+instance/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# User-uploaded files (contain member data)
+app/static/uploads/
+
+# Migration run logs (contain sensitive member/financial data)
+migrations/*.log
+
+# Distribution / packaging
+.eggs/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

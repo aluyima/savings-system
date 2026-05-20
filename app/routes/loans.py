@@ -70,14 +70,11 @@ def apply():
             flash('Only active members can apply for loans!', 'danger')
             return redirect(url_for('loans.apply'))
 
-        # Check if member has any active or pending loans
-        existing_loan = Loan.query.filter_by(member_id=member.id).filter(
-            Loan.status.in_(['Pending Guarantor Approval', 'Returned to Applicant', 'Pending Executive Approval', 'Approved', 'Disbursed', 'Active'])
-        ).first()
-
-        if existing_loan:
-            flash(f'You already have a pending or active loan (Loan #{existing_loan.loan_number}, Status: {existing_loan.status})! Please complete or resolve your existing loan before applying for a new one.', 'warning')
-            return redirect(url_for('loans.view_loan', id=existing_loan.id))
+        # Check minimum contribution months for loan eligibility
+        min_contributions = current_app.config.get('LOAN_MIN_CONTRIBUTIONS', 3)
+        if member.consecutive_months_paid < min_contributions:
+            flash(f'You need at least {min_contributions} months of contributions to apply for a loan. You currently have {member.consecutive_months_paid}.', 'danger')
+            return redirect(url_for('loans.apply'))
 
         try:
             amount_requested = Decimal(request.form.get('amount_requested'))
@@ -183,7 +180,7 @@ def apply():
             amount_requested=amount_requested,
             purpose=request.form.get('purpose'),
             repayment_period_months=int(request.form.get('repayment_period_months', 2)),
-            interest_rate=Decimal(current_app.config.get('LOAN_INTEREST_RATE', '5.00')),
+            interest_rate=Decimal(str(current_app.config.get('LOAN_INTEREST_RATE', '10.00'))),
             security_type=security_type,
             guarantor1_id=int(guarantor1_id) if guarantor1_id else None,
             guarantor2_id=int(guarantor2_id) if guarantor2_id else None,
