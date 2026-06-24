@@ -110,6 +110,25 @@ class Loan(db.Model):
             return False  # Not applicable for collateral loans
         return (self.guarantor1_approved is None or self.guarantor2_approved is None) and not self.any_guarantor_rejected()
 
+    def can_be_deleted(self):
+        """Whether this application may be deleted by an administrator.
+
+        Deletion is only permitted before the executive approves the loan, and a
+        loan that has been disbursed can never be deleted. In addition, a
+        guarantor-backed loan cannot be deleted once both guarantors have approved
+        (it has been guaranteed). Collateral-backed loans may be deleted any time
+        before executive approval.
+        """
+        # Once approved by the executive or disbursed, the loan is part of the record
+        if self.executive_approved or self.disbursed:
+            return False
+        if self.status in ['Approved', 'Disbursed', 'Active', 'Completed', 'Defaulted']:
+            return False
+        # Guarantor-backed loans cannot be deleted once they have been guaranteed
+        if self.security_type == 'Guarantors' and self.both_guarantors_approved():
+            return False
+        return True
+
 
 class LoanRepayment(db.Model):
     """

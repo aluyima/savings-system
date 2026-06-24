@@ -292,14 +292,19 @@
             {% endif %}
 
             <!-- Applicant Actions - For Returned Loans -->
-            {% if current_user.member and loan.member_id == current_user.member.id and loan.status == 'Returned to Applicant' %}
+            {% if loan.status == 'Returned to Applicant' and (current_user.is_super_admin() or (current_user.member and loan.member_id == current_user.member.id)) %}
+            {% set acting_for_applicant = current_user.is_super_admin() and not (current_user.member and loan.member_id == current_user.member.id) %}
             <div class="card mb-4 border-danger">
                 <div class="card-header bg-danger text-white">
                     <h5><i class="bi bi-arrow-return-left"></i> Loan Application Returned</h5>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-warning">
+                        {% if acting_for_applicant %}
+                        <i class="bi bi-exclamation-triangle"></i> <strong>This loan application has been returned to {{ loan.member.full_name }}.</strong>
+                        {% else %}
                         <i class="bi bi-exclamation-triangle"></i> <strong>Your loan application has been returned.</strong>
+                        {% endif %}
                         <br><br>
                         {% if loan.guarantor1_approved == False %}
                         <strong>{{ loan.guarantor1.full_name }}</strong> (Guarantor #1) declined to guarantee this loan.
@@ -330,6 +335,55 @@
                        onclick="return confirm('Are you sure you want to cancel this loan application?');">
                         <i class="bi bi-x-circle"></i> Cancel Application
                     </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Admin: Record Guarantor Response on Behalf -->
+            {% if current_user.is_super_admin() and loan.security_type == 'Guarantors' and loan.status in ['Pending Guarantor Approval', 'Returned to Applicant'] %}
+            <div class="card mb-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="bi bi-person-gear"></i> Record Guarantor Response (Admin)</h5>
+                </div>
+                <div class="card-body">
+                    <p class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Record a guarantor's approval or decline on their behalf,
+                        e.g. when the guarantor cannot use the system themselves.
+                    </p>
+
+                    {% for g_num, g_member, g_status in [
+                        (1, loan.guarantor1, loan.guarantor1_approved),
+                        (2, loan.guarantor2, loan.guarantor2_approved)
+                    ] %}
+                        {% if g_member %}
+                        <div class="border rounded p-3 mb-3">
+                            <h6 class="mb-2">Guarantor #{{ g_num }}: {{ g_member.member_number }} - {{ g_member.full_name }}</h6>
+                            {% if g_status == True %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Approved</span>
+                            {% elif g_status == False %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Declined</span>
+                            {% elif not g_member.is_qualified() %}
+                                <span class="badge bg-secondary">Not qualified to act as guarantor</span>
+                            {% else %}
+                                <form method="POST" action="{{ url_for('loans.approve_as_guarantor', id=loan.id) }}" class="mb-2">
+                                    <input type="hidden" name="guarantor_position" value="{{ g_num }}">
+                                    <button type="submit" class="btn btn-success btn-sm w-100"
+                                            onclick="return confirm('Record approval on behalf of {{ g_member.full_name }}?');">
+                                        <i class="bi bi-check-circle"></i> Approve on Behalf
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('loans.decline_as_guarantor', id=loan.id) }}">
+                                    <input type="hidden" name="guarantor_position" value="{{ g_num }}">
+                                    <textarea class="form-control mb-2" name="rejection_reason" rows="2" required
+                                              placeholder="Reason for declining on behalf of this guarantor..."></textarea>
+                                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                        <i class="bi bi-x-circle"></i> Decline on Behalf
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
                 </div>
             </div>
             {% endif %}
@@ -449,6 +503,26 @@
                         <i class="bi bi-arrow-down-circle"></i> Record Repayment
                     </a>
                     {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Admin: Delete un-guaranteed application -->
+            {% if current_user.is_super_admin() and loan.can_be_deleted() %}
+            <div class="card mb-4 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5><i class="bi bi-trash"></i> Delete Application</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">
+                        This application has not yet been guaranteed and can be permanently removed.
+                    </p>
+                    <form method="POST" action="{{ url_for('loans.delete_loan', id=loan.id) }}"
+                          onsubmit="return confirm('Permanently delete loan {{ loan.loan_number }}? This cannot be undone.');">
+                        <button type="submit" class="btn btn-danger w-100">
+                            <i class="bi bi-trash"></i> Delete Loan Application
+                        </button>
+                    </form>
                 </div>
             </div>
             {% endif %}

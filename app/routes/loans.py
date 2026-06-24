@@ -7,7 +7,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.loan import Loan, LoanRepayment
 from app.models.member import Member
-from app.utils.decorators import executive_required
+from app.utils.decorators import executive_required, super_admin_required
 from datetime import datetime, date
 from decimal import Decimal
 from sqlalchemy import func, extract
@@ -59,7 +59,12 @@ def list_loans():
 def apply():
     """Submit loan application"""
     if request.method == 'POST':
-        member_id = current_user.member.id if hasattr(current_user, 'member') else request.form.get('member_id')
+        # Executives/SuperAdmin may file on behalf of another member (selected on the
+        # form); everyone else can only apply for themselves.
+        if (current_user.is_executive() or current_user.is_super_admin()) and request.form.get('member_id'):
+            member_id = request.form.get('member_id')
+        else:
+            member_id = current_user.member.id if hasattr(current_user, 'member') else None
 
         if not member_id:
             flash('Invalid member selection!', 'danger')
@@ -68,6 +73,11 @@ def apply():
         member = Member.query.get(member_id)
         if not member or member.status != 'Active':
             flash('Only active members can apply for loans!', 'danger')
+            return redirect(url_for('loans.apply'))
+
+        # The administrator account is not a real group member and cannot borrow
+        if member.user and member.user.role == 'SuperAdmin':
+            flash('The administrator is not a group member and cannot take a loan.', 'danger')
             return redirect(url_for('loans.apply'))
 
         # Check minimum contribution months for loan eligibility
@@ -215,7 +225,9 @@ def apply():
     # GET request - show application form
     # For executive users, show all active members; for regular members, show only themselves
     if current_user.is_executive() or current_user.is_super_admin():
-        members = Member.query.filter_by(status='Active').order_by(Member.member_number).all()
+        # Exclude administrator accounts - they are not real group members and cannot borrow
+        members = [m for m in Member.query.filter_by(status='Active').order_by(Member.member_number).all()
+                   if not (m.user and m.user.role == 'SuperAdmin')]
         # Only qualified members can be guarantors
         guarantors = Member.query.filter_by(status='Active', qualified_for_benefits=True).order_by(Member.member_number).all()
     else:
@@ -486,29 +498,56 @@ def record_repayment(id):
     return render_template('loans/repay.html', loan=loan)
 
 
-@loans.route('/<int:id>/guarantor/approve', methods=['POST'])
-@login_required
-def approve_as_guarantor(id):
-    """Guarantor approves loan application"""
-    loan = Loan.query.get_or_404(id)
+def _resolve_guarantor_slot(loan):
+    """Determine which guarantor slot the current user is acting on.
 
-    # Check if current user is a guarantor for this loan
+    A SuperAdmin may act on behalf of a guarantor who cannot use the system by
+    submitting 'guarantor_position' ('1' or '2'); otherwise the slot is derived
+    from the logged-in member.
+
+    Returns a tuple (is_guarantor1, is_guarantor2, guarantor_member, acting_as_admin).
+    Raises ValueError with a user-facing message if the slot cannot be resolved.
+    """
+    if current_user.is_super_admin():
+        position = request.form.get('guarantor_position')
+        if position not in ('1', '2'):
+            raise ValueError('Please select which guarantor you are acting on behalf of.')
+        is_guarantor1 = (position == '1')
+        guarantor_id = loan.guarantor1_id if is_guarantor1 else loan.guarantor2_id
+        if not guarantor_id:
+            raise ValueError('This loan does not have the selected guarantor.')
+        return is_guarantor1, not is_guarantor1, Member.query.get(guarantor_id), True
+
     if not hasattr(current_user, 'member'):
-        flash('You must be a member to approve as guarantor!', 'danger')
-        return redirect(url_for('main.dashboard'))
+        raise ValueError('You must be a member to act as a guarantor!')
 
     member_id = current_user.member.id
     is_guarantor1 = (loan.guarantor1_id == member_id)
     is_guarantor2 = (loan.guarantor2_id == member_id)
-
     if not (is_guarantor1 or is_guarantor2):
-        flash('You are not a guarantor for this loan!', 'danger')
+        raise ValueError('You are not a guarantor for this loan!')
+    return is_guarantor1, is_guarantor2, current_user.member, False
+
+
+@loans.route('/<int:id>/guarantor/approve', methods=['POST'])
+@login_required
+def approve_as_guarantor(id):
+    """Guarantor approves loan application (SuperAdmin may act on their behalf)"""
+    loan = Loan.query.get_or_404(id)
+
+    try:
+        is_guarantor1, is_guarantor2, guarantor_member, acting_as_admin = _resolve_guarantor_slot(loan)
+    except ValueError as e:
+        flash(str(e), 'danger')
         return redirect(url_for('loans.view_loan', id=id))
 
-    # Check if guarantor is qualified for benefits
-    if not current_user.member.is_qualified():
+    # The guarantor (not the admin acting for them) must be qualified for benefits
+    if not guarantor_member.is_qualified():
         qualification_period = current_app.config.get('QUALIFICATION_PERIOD', 5)
-        flash(f'You must be qualified to act as a guarantor! Please complete {qualification_period} consecutive months of contributions first.', 'danger')
+        if acting_as_admin:
+            flash(f'{guarantor_member.full_name} is not yet qualified to act as a guarantor ({qualification_period} consecutive months of contributions required).', 'danger')
+        else:
+            flash(f'You must be qualified to act as a guarantor! Please complete {qualification_period} consecutive months of contributions first.', 'danger')
         return redirect(url_for('loans.view_loan', id=id))
 
     # Check if loan is in correct status
@@ -519,14 +558,14 @@ def approve_as_guarantor(id):
     # Approve based on which guarantor
     if is_guarantor1:
         if loan.guarantor1_approved is not None:
-            flash('You have already responded to this guarantor request!', 'warning')
+            flash('This guarantor has already responded to the request!', 'warning')
             return redirect(url_for('loans.view_loan', id=id))
         loan.guarantor1_approved = True
         loan.guarantor1_approval_date = datetime.now()
         guarantor_num = 1
     else:  # is_guarantor2
         if loan.guarantor2_approved is not None:
-            flash('You have already responded to this guarantor request!', 'warning')
+            flash('This guarantor has already responded to the request!', 'warning')
             return redirect(url_for('loans.view_loan', id=id))
         loan.guarantor2_approved = True
         loan.guarantor2_approval_date = datetime.now()
@@ -538,20 +577,29 @@ def approve_as_guarantor(id):
         # Send notification to applicant
         from app.utils.notifications import NotificationService
         NotificationService.send_guarantor_approval_notification(loan)
-        flash_message = 'Thank you! You have approved this loan. Both guarantors have now approved - the loan is pending executive approval.'
+        if acting_as_admin:
+            flash_message = f"Recorded {guarantor_member.full_name}'s approval. Both guarantors have now approved - the loan is pending executive approval."
+        else:
+            flash_message = 'Thank you! You have approved this loan. Both guarantors have now approved - the loan is pending executive approval.'
     else:
-        flash_message = f'Thank you! You have approved this loan as Guarantor #{guarantor_num}. Waiting for the other guarantor to approve.'
+        if acting_as_admin:
+            flash_message = f"Recorded {guarantor_member.full_name}'s approval as Guarantor #{guarantor_num}. Waiting for the other guarantor to approve."
+        else:
+            flash_message = f'Thank you! You have approved this loan as Guarantor #{guarantor_num}. Waiting for the other guarantor to approve.'
 
     db.session.commit()
 
     # Log action
     from app.models.audit import AuditLog
+    description = f'Approved loan {loan.loan_number} as Guarantor #{guarantor_num}'
+    if acting_as_admin:
+        description += f' on behalf of {guarantor_member.full_name}'
     AuditLog.log_action(
         user_id=current_user.id,
         action_type='GuarantorApproved',
         entity_type='Loan',
         entity_id=loan.id,
-        description=f'Approved loan {loan.loan_number} as Guarantor #{guarantor_num}',
+        description=description,
         ip_address=request.remote_addr,
         user_agent=request.user_agent.string
     )
@@ -563,26 +611,22 @@ def approve_as_guarantor(id):
 @loans.route('/<int:id>/guarantor/decline', methods=['POST'])
 @login_required
 def decline_as_guarantor(id):
-    """Guarantor declines loan application"""
+    """Guarantor declines loan application (SuperAdmin may act on their behalf)"""
     loan = Loan.query.get_or_404(id)
 
-    # Check if current user is a guarantor for this loan
-    if not hasattr(current_user, 'member'):
-        flash('You must be a member to decline as guarantor!', 'danger')
-        return redirect(url_for('main.dashboard'))
-
-    member_id = current_user.member.id
-    is_guarantor1 = (loan.guarantor1_id == member_id)
-    is_guarantor2 = (loan.guarantor2_id == member_id)
-
-    if not (is_guarantor1 or is_guarantor2):
-        flash('You are not a guarantor for this loan!', 'danger')
+    try:
+        is_guarantor1, is_guarantor2, guarantor_member, acting_as_admin = _resolve_guarantor_slot(loan)
+    except ValueError as e:
+        flash(str(e), 'danger')
         return redirect(url_for('loans.view_loan', id=id))
 
-    # Check if guarantor is qualified for benefits
-    if not current_user.member.is_qualified():
+    # The guarantor (not the admin acting for them) must be qualified for benefits
+    if not guarantor_member.is_qualified():
         qualification_period = current_app.config.get('QUALIFICATION_PERIOD', 5)
-        flash(f'You must be qualified to act as a guarantor! Please complete {qualification_period} consecutive months of contributions first.', 'danger')
+        if acting_as_admin:
+            flash(f'{guarantor_member.full_name} is not yet qualified to act as a guarantor ({qualification_period} consecutive months of contributions required).', 'danger')
+        else:
+            flash(f'You must be qualified to act as a guarantor! Please complete {qualification_period} consecutive months of contributions first.', 'danger')
         return redirect(url_for('loans.view_loan', id=id))
 
     # Check if loan is in correct status
@@ -596,24 +640,24 @@ def decline_as_guarantor(id):
         flash('Please provide a reason for declining!', 'danger')
         return redirect(url_for('loans.view_loan', id=id))
 
+    guarantor_name = guarantor_member.full_name
+
     # Decline based on which guarantor
     if is_guarantor1:
         if loan.guarantor1_approved is not None:
-            flash('You have already responded to this guarantor request!', 'warning')
+            flash('This guarantor has already responded to the request!', 'warning')
             return redirect(url_for('loans.view_loan', id=id))
         loan.guarantor1_approved = False
         loan.guarantor1_approval_date = datetime.now()
         loan.guarantor1_rejection_reason = rejection_reason
-        guarantor_name = current_user.member.full_name
         guarantor_num = 1
     else:  # is_guarantor2
         if loan.guarantor2_approved is not None:
-            flash('You have already responded to this guarantor request!', 'warning')
+            flash('This guarantor has already responded to the request!', 'warning')
             return redirect(url_for('loans.view_loan', id=id))
         loan.guarantor2_approved = False
         loan.guarantor2_approval_date = datetime.now()
         loan.guarantor2_rejection_reason = rejection_reason
-        guarantor_name = current_user.member.full_name
         guarantor_num = 2
 
     # Return loan to applicant
@@ -627,15 +671,22 @@ def decline_as_guarantor(id):
 
     # Log action
     from app.models.audit import AuditLog
+    description = f'Declined loan {loan.loan_number} as Guarantor #{guarantor_num}: {rejection_reason}'
+    if acting_as_admin:
+        description += f' (on behalf of {guarantor_name})'
     AuditLog.log_action(
         user_id=current_user.id,
         action_type='GuarantorDeclined',
         entity_type='Loan',
         entity_id=loan.id,
-        description=f'Declined loan {loan.loan_number} as Guarantor #{guarantor_num}: {rejection_reason}',
+        description=description,
         ip_address=request.remote_addr,
         user_agent=request.user_agent.string
     )
+
+    if acting_as_admin:
+        flash(f"Recorded {guarantor_name}'s decline. The application has been returned to the applicant.", 'info')
+        return redirect(url_for('loans.view_loan', id=id))
 
     flash('You have declined this guarantor request. The application has been returned to the applicant.', 'info')
     return redirect(url_for('main.dashboard'))
@@ -647,8 +698,9 @@ def edit_loan(id):
     """Edit and resubmit a returned loan application"""
     loan = Loan.query.get_or_404(id)
 
-    # Check access: only the applicant can edit their returned loan
-    if not hasattr(current_user, 'member') or loan.member_id != current_user.member.id:
+    # Check access: the applicant, or a SuperAdmin acting on their behalf, can edit
+    if not (current_user.is_super_admin() or
+            (hasattr(current_user, 'member') and loan.member_id == current_user.member.id)):
         flash('You do not have permission to edit this loan!', 'danger')
         return redirect(url_for('main.dashboard'))
 
@@ -776,8 +828,9 @@ def cancel_loan(id):
     """Cancel a returned loan application"""
     loan = Loan.query.get_or_404(id)
 
-    # Check access: only the applicant can cancel their loan
-    if not hasattr(current_user, 'member') or loan.member_id != current_user.member.id:
+    # Check access: the applicant, or a SuperAdmin acting on their behalf, can cancel
+    if not (current_user.is_super_admin() or
+            (hasattr(current_user, 'member') and loan.member_id == current_user.member.id)):
         flash('You do not have permission to cancel this loan!', 'danger')
         return redirect(url_for('main.dashboard'))
 
@@ -808,3 +861,37 @@ def cancel_loan(id):
 
     flash('Loan application has been canceled.', 'info')
     return redirect(url_for('main.dashboard'))
+
+
+@loans.route('/<int:id>/delete', methods=['POST'])
+@login_required
+@super_admin_required
+def delete_loan(id):
+    """Delete an un-guaranteed loan application (SuperAdmin only)"""
+    loan = Loan.query.get_or_404(id)
+
+    if not loan.can_be_deleted():
+        flash('This loan cannot be deleted because it has already been guaranteed, approved, or disbursed.', 'danger')
+        return redirect(url_for('loans.view_loan', id=id))
+
+    loan_number = loan.loan_number
+
+    # Remove any repayments first (none expected for un-disbursed loans), then the loan
+    loan.repayments.delete()
+    db.session.delete(loan)
+    db.session.commit()
+
+    # Log action
+    from app.models.audit import AuditLog
+    AuditLog.log_action(
+        user_id=current_user.id,
+        action_type='LoanDeleted',
+        entity_type='Loan',
+        entity_id=id,
+        description=f'Deleted loan application {loan_number}',
+        ip_address=request.remote_addr,
+        user_agent=request.user_agent.string
+    )
+
+    flash(f'Loan application {loan_number} has been deleted.', 'success')
+    return redirect(url_for('loans.list_loans'))
