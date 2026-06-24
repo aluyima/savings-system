@@ -1,0 +1,156 @@
+# CLAUDE.md
+
+Guidance for working in this repository. This file tracks the architectural and
+technical decisions behind the **Old Timers Savings Group – Digital Records
+Management System**, a Flask web app for managing a savings group's members,
+contributions, loans, welfare, meetings, and financial reporting.
+
+## Running the app
+
+```bash
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env          # then edit secrets
+flask --app run init-db       # create tables + seed SystemSetting defaults
+flask --app run create-superadmin   # interactive admin creation
+flask run                     # dev server at http://localhost:5000
+# or: python run.py           # debug=True
+```
+
+Currency is UGX throughout. Default timezone is `Africa/Kampala`.
+
+## Architecture
+
+Flask **application-factory** pattern. `create_app(config_name)` in
+[app/__init__.py](app/__init__.py) builds the app, reads all config from
+environment variables (via `python-dotenv`), initializes extensions, and
+registers blueprints inside an app context.
+
+- **Entry point**: [run.py](run.py) calls `create_app(os.getenv('FLASK_ENV', 'development'))`.
+- **Extensions** (module-level singletons in `app/__init__.py`, `init_app`-ed in the factory):
+  `db` (Flask-SQLAlchemy), `login_manager` (Flask-Login), `mail` (Flask-Mail).
+- **ORM**: SQLAlchemy. DB is **SQLite** by default (`instance/oldtimerssavings.db`);
+  relative SQLite URLs are rewritten to absolute paths in the factory. Postgres
+  is intended for production via `DATABASE_URL`.
+- **Schema creation**: `db.create_all()` runs on every startup. There is **no
+  Alembic/Flask-Migrate**; schema changes are applied with hand-written scripts
+  (see Migrations below).
+- **Templating**: server-rendered Jinja2 + Bootstrap 5. Shared helpers
+  (`format_currency`, `format_date`, etc.) and unread-notification count are
+  injected via a context processor and registered as template filters in the
+  factory.
+
+### Layout
+
+```
+app/
+├── __init__.py     # application factory, config, extension + blueprint wiring
+├── commands.py     # Flask CLI commands (registered via register_commands)
+├── models/         # one module per domain entity; aggregated in models/__init__.py
+├── routes/         # one Blueprint per domain area (auth, members, contributions,
+│                   #   membership_fees, loans, welfare, meetings, reports, users,
+│                   #   expenses, main)
+├── templates/      # Jinja2, one subfolder per area; base.html is the shell
+├── static/         # css, js, img, uploads
+└── utils/          # helpers.py, decorators.py, loan_reminders.py
+migrations/         # standalone one-off python migration scripts (NOT Flask-Migrate)
+docs/               # extensive feature/setup/bugfix documentation
+instance/           # SQLite database lives here
+```
+
+## Domain model
+
+Models live in [app/models/](app/models/) and are re-exported from
+[app/models/__init__.py](app/models/__init__.py). Key entities:
+
+- **User** ↔ **Member** is 1:1. `User` handles auth only; `Member` holds the
+  person/financial record. `User.username` is the member's phone number.
+- **Member / NextOfKin**, **Contribution / Receipt**, **Loan / LoanRepayment**,
+  **WelfareRequest / WelfarePayment**, **Meeting / Attendance / Minutes /
+  ActionItem**, **Expense**, **Notification**, **AuditLog**, **SystemSetting**.
+- Money columns use `Numeric(15, 2)`. Convert to `float` only for arithmetic.
+
+### Roles & access control
+
+Four roles on `User.role`: **SuperAdmin**, **Executive**, **Auditor**, **Member**.
+Enforced with decorators in [app/utils/decorators.py](app/utils/decorators.py):
+`super_admin_required`, `executive_required`, `auditor_required` (hierarchical —
+auditor view also allows executive/superadmin), `role_required(*roles)`,
+`member_or_self_required`, plus `active_account_required`,
+`password_change_required`, `check_account_lock`, and `audit_log(action, entity)`.
+
+Security decisions: passwords hashed with Werkzeug; Flask-Login sessions with a
+custom cookie name (`oldtimers_session`), `HttpOnly`, `SameSite=Lax`, and
+`SECURE` toggled by env (off for local HTTP); CSRF via Flask-WTF; account
+lockout after failed logins; forced password change on first login
+(`must_change_password`).
+
+## Configuration & business rules
+
+All tunables come from environment variables with defaults in the factory, and
+are **also** seeded into the `SystemSetting` table by `init-db`
+(`SystemSetting.initialize_defaults`). `SystemSetting` is the runtime, admin-
+editable source of truth (typed get/set, audited via `updated_by`); env vars are
+the bootstrap defaults.
+
+Current business rules (see also memory `project_loan_rules.md`):
+
+- **Loan interest: 10% per month** (`.env.example` `LOAN_INTEREST_RATE=10.00`,
+  changed 2026-05-20). Simple interest: `total = principal × (1 + rate/100 × months)`
+  via `Loan.calculate_total_payable()`. NOTE: some hardcoded fallback defaults in
+  code/README still say 5% — treat `.env`/`SystemSetting` as authoritative.
+- Loan eligibility: member must have ≥ 3 consecutive monthly contributions;
+  concurrent loans are allowed. Max repayment period: 2 months.
+- Loan approval is two-stage: **guarantors** (both must approve) or collateral,
+  then **executives**, then disbursement. `Loan.status` is a string state machine
+  (`Pending Guarantor Approval → Pending Executive Approval → Approved →
+  Disbursed → Active → Completed`, with `Returned to Applicant`, `Rejected`,
+  `Defaulted` branches).
+- Other defaults: membership fee 20,000; monthly contribution 100,000;
+  bereavement 500,000; quorum 5; qualification period 5 months; loan default
+  after 30 days overdue.
+
+When changing a business rule, update **all** of: `.env.example`, the factory
+default, the `SystemSetting` seed, and any stale hardcoded literals.
+
+## CLI commands
+
+Defined in [run.py](run.py) and [app/commands.py](app/commands.py), run as
+`flask --app run <cmd>`:
+
+- `init-db` — create tables and seed system settings.
+- `create-admin` / `create-superadmin` — create the SuperAdmin (+ its Member).
+- `send-loan-reminders` — notify on loans due tomorrow (designed for cron; see
+  [send_loan_reminders.sh](send_loan_reminders.sh) and `docs/LOAN_REMINDER_SETUP.md`).
+- `check-overdue-loans`, `check-upcoming-loans --days N` — reporting.
+- `clear-database [--keep-admin]` — wipe data respecting FK order; keeps SuperAdmin.
+
+## Notifications
+
+In-app `Notification` records plus optional outbound channels, all env-gated:
+Email (Flask-Mail / SMTP, default Gmail), SMS (`SMS_ENABLED`), WhatsApp
+(`WHATSAPP_ENABLED`). Loan reminder logic is in
+[app/utils/loan_reminders.py](app/utils/loan_reminders.py). See
+`docs/NOTIFICATION_CONFIGURATION.md`.
+
+## Migrations
+
+No migration framework. To change schema:
+1. Write a standalone script in [migrations/](migrations/) (see existing examples
+   like `add_loan_due_date.py`, `update_loan_interest_rates.py`) or a `.sql` file
+   in the repo root, and run it against the SQLite DB.
+2. Add the corresponding column to the model so `db.create_all()` stays in sync
+   for fresh installs.
+
+Migration scripts write timestamped `.log` files into `migrations/`.
+
+## Conventions
+
+- One blueprint and one template subfolder per domain area; mirror existing
+  naming when adding features.
+- Keep authorization on routes via the decorators above — don't hand-roll role
+  checks.
+- Use `SystemSetting.get_setting(key, default)` for configurable values rather
+  than re-reading env at request time.
+- Match the existing docstring style (module + class/function docstrings) and the
+  emoji/`=`-banner style used in CLI output.
