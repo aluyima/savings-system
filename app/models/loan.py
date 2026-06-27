@@ -60,6 +60,15 @@ class Loan(db.Model):
     default_date = db.Column(db.Date)
     recovery_notes = db.Column(db.Text)
 
+    # Loan application fee (paid into the bank, recorded manually by an executive).
+    # Separate from the loan repayment - not included in total_payable.
+    application_fee_amount = db.Column(db.Numeric(15, 2))
+    application_fee_paid = db.Column(db.Boolean, default=False)
+    application_fee_date = db.Column(db.Date)
+    application_fee_reference = db.Column(db.String(50))  # Bank deposit reference
+    application_fee_recorded_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    application_fee_notes = db.Column(db.Text)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -69,6 +78,7 @@ class Loan(db.Model):
     chairman = db.relationship('User', foreign_keys=[approved_by_chairman])
     secretary = db.relationship('User', foreign_keys=[approved_by_secretary])
     treasurer = db.relationship('User', foreign_keys=[approved_by_treasurer])
+    application_fee_recorder = db.relationship('User', foreign_keys=[application_fee_recorded_by])
     repayments = db.relationship('LoanRepayment', backref='loan', lazy='dynamic')
 
     def __repr__(self):
@@ -128,6 +138,45 @@ class Loan(db.Model):
         if self.security_type == 'Guarantors' and self.both_guarantors_approved():
             return False
         return True
+
+    def recompute_payable(self):
+        """Recalculate total payable, balance, due date and status from the current
+        principal, interest rate and repayment period, accounting for payments made.
+
+        Used when an executive adjusts (e.g. shortens) the repayment period so that
+        a borrower who repays early is only charged interest for the shorter period.
+        """
+        if self.amount_approved is None or self.interest_rate is None:
+            return
+        principal = float(self.amount_approved)
+        rate = float(self.interest_rate) / 100  # monthly rate as a decimal
+        self.total_payable = principal + (principal * rate * self.repayment_period_months)
+        paid = float(self.total_paid or 0)
+        self.balance = float(self.total_payable) - paid
+        # Keep due date in step with the (new) period for disbursed loans
+        if self.disbursement_date:
+            from dateutil.relativedelta import relativedelta
+            self.due_date = self.disbursement_date + relativedelta(months=self.repayment_period_months)
+        # An early payoff may already cover the reduced balance
+        if self.status in ['Active', 'Disbursed'] and self.balance <= 0:
+            self.status = 'Completed'
+
+    def extend_one_month(self):
+        """Extend the repayment period by one month, adding one month's interest on
+        the principal and pushing the due date out a month.
+
+        Used by the automatic overdue-extension job. Returns the interest added.
+        """
+        from dateutil.relativedelta import relativedelta
+        principal = float(self.amount_approved or 0)
+        rate = float(self.interest_rate or 0) / 100
+        added_interest = principal * rate
+        self.repayment_period_months = (self.repayment_period_months or 0) + 1
+        self.total_payable = float(self.total_payable or 0) + added_interest
+        self.balance = float(self.balance or 0) + added_interest
+        if self.due_date:
+            self.due_date = self.due_date + relativedelta(months=1)
+        return added_interest
 
 
 class LoanRepayment(db.Model):

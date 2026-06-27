@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -iE '\\\\.db$|secret\\\\.py|requirements copy')",
+      "Bash(git checkout *)",
+      "Bash(git merge *)",
+      "Bash(gh auth *)",
+      "Bash(timeout 10 ssh -T git@github.com)"
+    ]
+  }
+}

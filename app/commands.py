@@ -5,7 +5,7 @@ Custom management commands for the application
 import click
 from flask import current_app
 from app import db
-from app.utils.loan_reminders import check_and_send_due_date_reminders, get_overdue_loans, get_upcoming_due_loans
+from app.utils.loan_reminders import check_and_send_due_date_reminders, get_overdue_loans, get_upcoming_due_loans, apply_overdue_extensions
 from datetime import date
 import getpass
 
@@ -100,6 +100,34 @@ def register_commands(app):
                     click.echo(f'  Due Date: {loan.due_date.strftime("%d/%m/%Y")} ({days_until_due} days)')
                     click.echo(f'  Balance: UGX {loan.balance:,.0f}')
                     click.echo('')
+
+        click.echo('=' * 60)
+
+    @app.cli.command('extend-overdue-loans')
+    def extend_overdue_loans_command():
+        """Auto-extend loans overdue by more than the grace period (run daily)"""
+        click.echo('=' * 60)
+        click.echo('Overdue Loan Auto-Extension')
+        click.echo('=' * 60)
+        click.echo(f'Date: {date.today().strftime("%d/%m/%Y")}')
+        click.echo('')
+
+        with app.app_context():
+            result = apply_overdue_extensions()
+
+            click.echo(f"Overdue loans checked: {result['loans_checked']}")
+            click.echo(f"Loans extended:        {result['loans_extended']}")
+
+            if result['details']:
+                click.echo('')
+                for loan_number, months, interest in result['details']:
+                    click.echo(f"  {loan_number}: +{months} month(s), added interest UGX {interest:,.0f}")
+
+            click.echo('')
+            if result['loans_extended']:
+                click.secho('✓ Extensions applied successfully!', fg='green')
+            else:
+                click.secho('No loans required extension.', fg='green')
 
         click.echo('=' * 60)
 

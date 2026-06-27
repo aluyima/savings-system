@@ -68,6 +68,7 @@ def create_app(config_name='development'):
     app.config['LOAN_INTEREST_RATE'] = float(os.getenv('LOAN_INTEREST_RATE', 10.00))
     app.config['LOAN_MIN_CONTRIBUTIONS'] = int(os.getenv('LOAN_MIN_CONTRIBUTIONS', 3))
     app.config['LOAN_MAX_PERIOD'] = int(os.getenv('LOAN_MAX_PERIOD', 2))
+    app.config['LOAN_EXTENSION_GRACE_DAYS'] = int(os.getenv('LOAN_EXTENSION_GRACE_DAYS', 10))
     app.config['QUORUM_REQUIREMENT'] = int(os.getenv('QUORUM_REQUIREMENT', 5))
     app.config['SUSPENSION_THRESHOLD'] = int(os.getenv('SUSPENSION_THRESHOLD', 3))
     app.config['EXPULSION_THRESHOLD'] = int(os.getenv('EXPULSION_THRESHOLD', 6))

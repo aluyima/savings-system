@@ -9,7 +9,7 @@ from app.models.loan import Loan, LoanRepayment
 from app.models.member import Member
 from app.utils.decorators import executive_required, super_admin_required
 from datetime import datetime, date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from sqlalchemy import func, extract
 
 loans = Blueprint('loans', __name__, url_prefix='/loans')
@@ -861,6 +861,110 @@ def cancel_loan(id):
 
     flash('Loan application has been canceled.', 'info')
     return redirect(url_for('main.dashboard'))
+
+
+@loans.route('/<int:id>/application-fee', methods=['POST'])
+@login_required
+@executive_required
+def record_application_fee(id):
+    """Record (or update) the loan application fee deposited in the bank"""
+    loan = Loan.query.get_or_404(id)
+
+    try:
+        amount = Decimal(request.form.get('amount'))
+        if amount < 0:
+            flash('Application fee cannot be negative!', 'danger')
+            return redirect(url_for('loans.view_loan', id=id))
+    except (ValueError, TypeError, InvalidOperation):
+        flash('Invalid application fee amount!', 'danger')
+        return redirect(url_for('loans.view_loan', id=id))
+
+    fee_date_raw = request.form.get('fee_date')
+    try:
+        fee_date = datetime.strptime(fee_date_raw, '%Y-%m-%d').date() if fee_date_raw else date.today()
+    except ValueError:
+        flash('Invalid fee date!', 'danger')
+        return redirect(url_for('loans.view_loan', id=id))
+
+    was_recorded = loan.application_fee_paid
+
+    loan.application_fee_amount = amount
+    loan.application_fee_date = fee_date
+    loan.application_fee_reference = request.form.get('reference') or None
+    loan.application_fee_notes = request.form.get('notes') or None
+    loan.application_fee_paid = True
+    loan.application_fee_recorded_by = current_user.id
+
+    db.session.commit()
+
+    # Log action
+    from app.models.audit import AuditLog
+    action = 'LoanApplicationFeeUpdated' if was_recorded else 'LoanApplicationFeeRecorded'
+    AuditLog.log_action(
+        user_id=current_user.id,
+        action_type=action,
+        entity_type='Loan',
+        entity_id=loan.id,
+        description=f'{"Updated" if was_recorded else "Recorded"} application fee of UGX {float(amount):,.0f} for loan {loan.loan_number}',
+        ip_address=request.remote_addr,
+        user_agent=request.user_agent.string
+    )
+
+    flash(f'Application fee of UGX {float(amount):,.0f} {"updated" if was_recorded else "recorded"}.', 'success')
+    return redirect(url_for('loans.view_loan', id=id))
+
+
+@loans.route('/<int:id>/shorten', methods=['POST'])
+@login_required
+@executive_required
+def shorten_loan(id):
+    """Shorten an active loan's repayment period (early payoff) and reduce interest"""
+    loan = Loan.query.get_or_404(id)
+
+    if loan.status not in ['Active', 'Disbursed']:
+        flash('Only active (disbursed) loans can have their period adjusted!', 'warning')
+        return redirect(url_for('loans.view_loan', id=id))
+
+    try:
+        new_months = int(request.form.get('repayment_period_months'))
+    except (ValueError, TypeError):
+        flash('Invalid repayment period!', 'danger')
+        return redirect(url_for('loans.view_loan', id=id))
+
+    if new_months < 1:
+        flash('Repayment period must be at least 1 month!', 'danger')
+        return redirect(url_for('loans.view_loan', id=id))
+
+    if new_months >= loan.repayment_period_months:
+        flash('The new period must be shorter than the current period.', 'warning')
+        return redirect(url_for('loans.view_loan', id=id))
+
+    old_months = loan.repayment_period_months
+    old_total = float(loan.total_payable or 0)
+
+    loan.repayment_period_months = new_months
+    loan.recompute_payable()
+
+    db.session.commit()
+
+    # Log action
+    from app.models.audit import AuditLog
+    AuditLog.log_action(
+        user_id=current_user.id,
+        action_type='LoanPeriodShortened',
+        entity_type='Loan',
+        entity_id=loan.id,
+        description=(f'Shortened loan {loan.loan_number} from {old_months} to {new_months} month(s); '
+                     f'total payable {old_total:,.0f} -> {float(loan.total_payable):,.0f}'),
+        ip_address=request.remote_addr,
+        user_agent=request.user_agent.string
+    )
+
+    msg = f'Loan period shortened to {new_months} month(s). New total payable: UGX {float(loan.total_payable):,.0f}.'
+    if loan.status == 'Completed':
+        msg += ' The loan balance is fully covered and it is now marked Completed.'
+    flash(msg, 'success')
+    return redirect(url_for('loans.view_loan', id=id))
 
 
 @loans.route('/<int:id>/delete', methods=['POST'])

@@ -105,6 +105,21 @@
                                 </tr>
                                 {% endif %}
                                 {% endif %}
+                                {% if loan.application_fee_paid %}
+                                <tr>
+                                    <th>Application Fee:</th>
+                                    <td>
+                                        {{ format_currency(loan.application_fee_amount) }}
+                                        <span class="badge bg-success ms-1">Paid</span>
+                                        {% if loan.application_fee_reference or loan.application_fee_date %}
+                                        <br><small class="text-muted">
+                                            {% if loan.application_fee_reference %}Ref: {{ loan.application_fee_reference }}{% endif %}
+                                            {% if loan.application_fee_date %} on {{ loan.application_fee_date.strftime('%d/%m/%Y') }}{% endif %}
+                                        </small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
                             </table>
                         </div>
                     </div>
@@ -502,7 +517,70 @@
                     <a href="{{ url_for('loans.record_repayment', id=loan.id) }}" class="btn btn-success w-100 mb-2">
                         <i class="bi bi-arrow-down-circle"></i> Record Repayment
                     </a>
+
+                    {% if loan.repayment_period_months > 1 %}
+                    <hr>
+                    <form method="POST" action="{{ url_for('loans.shorten_loan', id=loan.id) }}"
+                          onsubmit="return confirm('Shorten this loan period and recalculate the interest?');">
+                        <label for="repayment_period_months" class="form-label">
+                            <i class="bi bi-arrow-bar-up"></i> Shorten Period (early payoff)
+                        </label>
+                        <select class="form-select form-select-sm mb-2" id="repayment_period_months" name="repayment_period_months" required>
+                            {% for m in range(1, loan.repayment_period_months) %}
+                            <option value="{{ m }}">{{ m }} month{{ 's' if m > 1 else '' }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted d-block mb-2">
+                            Recomputes interest for the shorter period (currently {{ loan.repayment_period_months }} months).
+                        </small>
+                        <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="bi bi-calculator"></i> Adjust Period &amp; Interest
+                        </button>
+                    </form>
                     {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Application Fee (executives record the bank deposit manually) -->
+            {% if current_user.is_executive() or current_user.is_super_admin() %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-receipt"></i> Application Fee</h5>
+                </div>
+                <div class="card-body">
+                    {% if loan.application_fee_paid %}
+                    <p class="mb-1"><span class="badge bg-success">Recorded</span>
+                        {% if loan.application_fee_recorder %}<small class="text-muted">by {{ loan.application_fee_recorder.username }}</small>{% endif %}
+                    </p>
+                    <table class="table table-sm mb-2">
+                        <tr><th>Amount:</th><td>{{ format_currency(loan.application_fee_amount) }}</td></tr>
+                        <tr><th>Date:</th><td>{{ loan.application_fee_date.strftime('%d/%m/%Y') if loan.application_fee_date else '-' }}</td></tr>
+                        <tr><th>Bank Ref:</th><td>{{ loan.application_fee_reference or '-' }}</td></tr>
+                    </table>
+                    <p class="text-muted small mb-2">Update the recorded fee if needed:</p>
+                    {% else %}
+                    <p class="text-muted small mb-2">
+                        Record the application fee after it has been deposited in the bank.
+                    </p>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('loans.record_application_fee', id=loan.id) }}">
+                        <label for="amount" class="form-label">Amount (UGX)</label>
+                        <input type="number" class="form-control mb-2" id="amount" name="amount" step="100" min="0"
+                               required value="{{ loan.application_fee_amount or '' }}">
+                        <label for="fee_date" class="form-label">Date Deposited</label>
+                        <input type="date" class="form-control mb-2" id="fee_date" name="fee_date"
+                               required value="{{ loan.application_fee_date.isoformat() if loan.application_fee_date else '' }}">
+                        <label for="reference" class="form-label">Bank Deposit Reference</label>
+                        <input type="text" class="form-control mb-2" id="reference" name="reference"
+                               value="{{ loan.application_fee_reference or '' }}" placeholder="e.g. deposit slip / txn ref">
+                        <label for="fee_notes" class="form-label">Notes</label>
+                        <textarea class="form-control mb-2" id="fee_notes" name="notes" rows="2">{{ loan.application_fee_notes or '' }}</textarea>
+                        <button type="submit" class="btn btn-primary btn-sm w-100">
+                            <i class="bi bi-receipt"></i> {{ 'Update' if loan.application_fee_paid else 'Record' }} Application Fee
+                        </button>
+                    </form>
                 </div>
             </div>
             {% endif %}

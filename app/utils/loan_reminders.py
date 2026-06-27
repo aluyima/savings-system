@@ -248,6 +248,95 @@ def get_overdue_loans():
     return overdue_loans
 
 
+def apply_overdue_extensions(grace_days=None):
+    """Automatically extend loans that are more than `grace_days` past their due date.
+
+    For each unpaid loan whose due date has been passed by more than the grace
+    period, the repayment period is extended by one month (adding one month's
+    interest on the principal) and the due date is pushed out a month. The
+    extension repeats until the loan's due date is back within the grace window,
+    so a single run also catches up loans that have been overdue for several
+    months. Designed to be run once per day.
+
+    Returns:
+        dict: Summary of extensions applied
+    """
+    from app.models.system import SystemSetting
+
+    if grace_days is None:
+        grace_days = SystemSetting.get_setting(
+            'LOAN_EXTENSION_GRACE_DAYS',
+            current_app.config.get('LOAN_EXTENSION_GRACE_DAYS', 10)
+        )
+    grace_days = int(grace_days)
+    today = date.today()
+
+    overdue_loans = Loan.query.filter(
+        Loan.status.in_(['Active', 'Disbursed']),
+        Loan.balance > 0,
+        Loan.due_date.isnot(None),
+        Loan.due_date < today
+    ).all()
+
+    extended = []
+    for loan in overdue_loans:
+        months_added = 0
+        interest_added = 0.0
+        # Apply as many monthly extensions as needed to bring the due date back
+        # within the grace window.
+        while loan.due_date and (today - loan.due_date).days > grace_days and float(loan.balance or 0) > 0:
+            interest_added += loan.extend_one_month()
+            months_added += 1
+
+        if months_added:
+            note = (f"[{today.strftime('%d/%m/%Y')}] Auto-extended {months_added} month(s) for being "
+                    f"more than {grace_days} days overdue; added interest UGX {interest_added:,.0f}; "
+                    f"new due date {loan.due_date.strftime('%d/%m/%Y')}.")
+            loan.recovery_notes = (loan.recovery_notes + "\n" + note) if loan.recovery_notes else note
+            extended.append((loan, months_added, interest_added))
+
+    if extended:
+        db.session.commit()
+        for loan, months_added, interest_added in extended:
+            try:
+                _notify_extension(loan, months_added, interest_added)
+            except Exception as e:
+                print(f"Extension notice failed for {loan.loan_number}: {str(e)}")
+
+    return {
+        'success': True,
+        'loans_checked': len(overdue_loans),
+        'loans_extended': len(extended),
+        'details': [(loan.loan_number, m, i) for loan, m, i in extended]
+    }
+
+
+def _notify_extension(loan, months_added, interest_added):
+    """Notify the borrower and executives that a loan was auto-extended."""
+    from app.models.notification import Notification
+
+    title = f"Loan {loan.loan_number} extended ({months_added} month(s))"
+    message = (f"Because it was overdue, loan {loan.loan_number} has been automatically extended by "
+               f"{months_added} month(s). Additional interest of UGX {interest_added:,.0f} has been "
+               f"applied. New balance: UGX {float(loan.balance or 0):,.0f}, due {loan.due_date.strftime('%d/%m/%Y')}.")
+    link = f"/loans/{loan.id}"
+
+    # In-app notification to the borrower (if they have a user account)
+    if loan.member and getattr(loan.member, 'user', None):
+        Notification.create_notification(
+            user_id=loan.member.user.id, title=title, message=message,
+            notification_type='Warning', category='Loan', link_url=link, priority='High'
+        )
+
+    # In-app notification to executives / admins
+    exec_user_ids = [u.id for u in User.query.filter(User.role.in_(['Executive', 'SuperAdmin'])).all()]
+    if exec_user_ids:
+        Notification.create_bulk_notification(
+            user_ids=exec_user_ids, title=title, message=message,
+            notification_type='Warning', category='Loan', link_url=link, priority='High'
+        )
+
+
 def get_upcoming_due_loans(days=7):
     """
     Get loans due within the next specified number of days

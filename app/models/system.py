@@ -142,6 +142,14 @@ class SystemSetting(db.Model):
                 'description': 'Days after due date before loan is marked as defaulted',
                 'is_editable': True
             },
+            {
+                'setting_key': 'LOAN_EXTENSION_GRACE_DAYS',
+                'setting_value': '10',
+                'setting_type': 'Integer',
+                'category': 'Financial',
+                'description': 'Days past due before an unpaid loan is auto-extended by one month (with interest)',
+                'is_editable': True
+            },
 
             # Membership Settings
             {

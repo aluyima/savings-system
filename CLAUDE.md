@@ -101,11 +101,31 @@ Current business rules (see also memory `project_loan_rules.md`):
   code/README still say 5% — treat `.env`/`SystemSetting` as authoritative.
 - Loan eligibility: member must have ≥ 3 consecutive monthly contributions;
   concurrent loans are allowed. Max repayment period: 2 months.
+- **Early payoff (shorten):** an executive/admin can shorten an active loan's
+  repayment period via `POST /loans/<id>/shorten`; interest is recomputed for the
+  shorter period (`Loan.recompute_payable()`). e.g. a 2-month loan repaid within a
+  month can be reset to 1 month of interest. Manual action by design.
+- **Overdue auto-extension (no cap):** a loan more than `LOAN_EXTENSION_GRACE_DAYS`
+  (default 10) past due is automatically extended by one month, adding one month's
+  interest on the principal and pushing the due date out a month
+  (`Loan.extend_one_month()`). Repeats every month until repaid — there is no cap
+  and this rule does **not** mark loans Defaulted. Applied by
+  `apply_overdue_extensions()` via the `extend-overdue-loans` CLI command, which is
+  meant to run **daily** (cron / PythonAnywhere scheduled task). Extensions are
+  recorded in `Loan.recovery_notes` and notified in-app to borrower + executives;
+  they are not audit-logged (no acting user in the job).
 - Loan approval is two-stage: **guarantors** (both must approve) or collateral,
   then **executives**, then disbursement. `Loan.status` is a string state machine
   (`Pending Guarantor Approval → Pending Executive Approval → Approved →
   Disbursed → Active → Completed`, with `Returned to Applicant`, `Rejected`,
   `Defaulted` branches).
+- **Loan application fee:** a fee members deposit in the bank, entered manually by
+  an executive/admin via `POST /loans/<id>/application-fee` (route
+  `record_application_fee`). Amount is typed per loan (no standard amount), stored
+  on the `Loan` (`application_fee_*` columns). It is **separate from the repayment**
+  — not added to `total_payable`/interest — and does **not** gate approval or
+  disbursement; it can be recorded/updated at any time. Schema added via
+  `migrations/add_loan_application_fee.py`.
 - Other defaults: membership fee 20,000; monthly contribution 100,000;
   bereavement 500,000; quorum 5; qualification period 5 months; loan default
   after 30 days overdue.
@@ -123,6 +143,8 @@ Defined in [run.py](run.py) and [app/commands.py](app/commands.py), run as
 - `send-loan-reminders` — notify on loans due tomorrow (designed for cron; see
   [send_loan_reminders.sh](send_loan_reminders.sh) and `docs/LOAN_REMINDER_SETUP.md`).
 - `check-overdue-loans`, `check-upcoming-loans --days N` — reporting.
+- `extend-overdue-loans` — auto-extend loans overdue beyond the grace period
+  (designed for a daily cron; see Loan business rules above).
 - `clear-database [--keep-admin]` — wipe data respecting FK order; keeps SuperAdmin.
 
 ## Notifications
