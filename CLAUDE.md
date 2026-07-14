@@ -52,7 +52,8 @@ app/
 │                   #   expenses, main)
 ├── templates/      # Jinja2, one subfolder per area; base.html is the shell
 ├── static/         # css, js, img, uploads
-└── utils/          # helpers.py, decorators.py, loan_reminders.py
+└── utils/          # helpers.py, decorators.py, notifications.py, loan_reminders.py
+                    #   (loan_reminders also holds apply_overdue_extensions)
 migrations/         # standalone one-off python migration scripts (NOT Flask-Migrate)
 docs/               # extensive feature/setup/bugfix documentation
 instance/           # SQLite database lives here
@@ -133,6 +134,46 @@ Current business rules (see also memory `project_loan_rules.md`):
 When changing a business rule, update **all** of: `.env.example`, the factory
 default, the `SystemSetting` seed, and any stale hardcoded literals.
 
+## Loan administration (admin acting on behalf of members)
+
+Many members are not IT-savvy, so loan operations were stalling when a member had
+to act for themselves. The **SuperAdmin** can therefore drive the whole loan
+lifecycle on a member's behalf. Rules (all in [app/routes/loans.py](app/routes/loans.py)):
+
+- **Apply on behalf:** executives/SuperAdmin file a loan under the member selected
+  on the form; everyone else is forced to their own member. (The original code
+  always used the logged-in user's member and silently ignored the dropdown —
+  don't reintroduce that.)
+- **Guarantor approve/decline on behalf:** a SuperAdmin submits `guarantor_position`
+  (`1`/`2`) to act for that guarantor; `_resolve_guarantor_slot()` resolves the slot,
+  otherwise it's derived from the logged-in member. The **qualification rule is
+  enforced against the represented guarantor**, not the admin, and the audit log
+  records "on behalf of \<name\>".
+- **Edit/resubmit and cancel** a *Returned to Applicant* loan: allowed for the
+  applicant **or** a SuperAdmin.
+- **Delete an application** (`POST /loans/<id>/delete`, SuperAdmin only): gated by
+  `Loan.can_be_deleted()` — permitted only **before executive approval**, and never
+  once the loan is disbursed or (for guarantor-backed loans) already guaranteed by
+  both guarantors. Collateral loans are deletable up until executive approval.
+- **The administrator is not a group member and cannot borrow.** A loan may not be
+  filed for a member whose linked user is a `SuperAdmin` (server guard in `apply`),
+  and admin accounts are excluded from the borrower dropdown.
+
+## Deployment (production: PythonAnywhere)
+
+- Virtualenv `~/.virtualenvs/savings-env`; app in `~/savings-system`; reload via the
+  **Web tab → Reload** after pulling.
+- The live SQLite DB (`instance/`), `.env` and `app/static/uploads/` are **gitignored
+  and must never be tracked** — a previously tracked DB caused merge conflicts that
+  wedged the server. Always back up `instance/oldtimerssavings.db` before deploying.
+- Deploy is a plain `git pull --ff-only origin main`. Run `git config core.fileMode false`
+  on the server — executable-bit flapping on `.env.example` repeatedly blocked pulls.
+  Never edit `.env.example` on the server; real config belongs in `.env`.
+- If a release adds columns, run its `migrations/*.py` script after pulling (see Migrations).
+- Rules that depend on a scheduler (`extend-overdue-loans`, `send-loan-reminders`) only
+  fire if a **daily scheduled task** is configured — as of 2026-06 none was set up, so
+  overdue auto-extension will not happen on its own until one is added.
+
 ## CLI commands
 
 Defined in [run.py](run.py) and [app/commands.py](app/commands.py), run as
@@ -176,3 +217,19 @@ Migration scripts write timestamped `.log` files into `migrations/`.
   than re-reading env at request time.
 - Match the existing docstring style (module + class/function docstrings) and the
   emoji/`=`-banner style used in CLI output.
+
+### Gotchas
+
+- `Decimal('abc')` raises `decimal.InvalidOperation`, **not** `ValueError`. Several
+  older routes only catch `(ValueError, TypeError)` around `Decimal(...)` and will
+  500 on non-numeric form input. Catch `InvalidOperation` too.
+- `AuditLog.user_id` is `nullable=False`, so **background jobs cannot write audit
+  logs** (there is no acting user). Automated changes are recorded on the entity
+  itself (e.g. `Loan.recovery_notes`) plus `Notification` records instead.
+- Templates guard on money fields inconsistently: `loans/view.html` does
+  `{% if loan.balance > 0 %}` and divides by `loan.total_payable`, which only holds
+  because those are populated at approval. Loans in Active/Disbursed/Completed always
+  have them; don't render that block for other statuses.
+- `Member.user` (backref from `User.member`) exists for every user, so
+  `hasattr(current_user, 'member')` is always true — it cannot be used to tell an
+  admin apart from a member.
