@@ -543,7 +543,7 @@ def approve_as_guarantor(id):
 
     # The guarantor (not the admin acting for them) must be qualified for benefits
     if not guarantor_member.is_qualified():
-        qualification_period = current_app.config.get('QUALIFICATION_PERIOD', 5)
+        qualification_period = current_app.config.get('QUALIFICATION_PERIOD', 3)
         if acting_as_admin:
             flash(f'{guarantor_member.full_name} is not yet qualified to act as a guarantor ({qualification_period} consecutive months of contributions required).', 'danger')
         else:
@@ -622,7 +622,7 @@ def decline_as_guarantor(id):
 
     # The guarantor (not the admin acting for them) must be qualified for benefits
     if not guarantor_member.is_qualified():
-        qualification_period = current_app.config.get('QUALIFICATION_PERIOD', 5)
+        qualification_period = current_app.config.get('QUALIFICATION_PERIOD', 3)
         if acting_as_admin:
             flash(f'{guarantor_member.full_name} is not yet qualified to act as a guarantor ({qualification_period} consecutive months of contributions required).', 'danger')
         else:

@@ -129,7 +129,7 @@ nano .env
 
 ```bash
 # Flask Configuration
-SECRET_KEY=396c6bb96740299d4709507f5d8470a8
+SECRET_KEY=<generate-a-new-random-key: python -c "import secrets; print(secrets.token_hex(32))">
 FLASK_ENV=production
 
 # Database (SQLite for free account)
@@ -162,13 +162,13 @@ MAIL_SERVER=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USE_TLS=True
 MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=CLouds#122
+MAIL_PASSWORD=<your-gmail-app-password>
 MAIL_DEFAULT_SENDER=Old Timers Savings Club <noreply@oldtimerssavings.org>
 
 # Optional: SMS Configuration (Africa's Talking)
 SMS_ENABLED=False
 SMS_API_URL=https://api.africastalking.com/version1/messaging
-SMS_API_KEY=atsk_9cb2059497df47f74dfc948284b7f8da3c862a523ced1f1773ce8251411ab730f51fd350
+SMS_API_KEY=<your-africas-talking-api-key>
 SMS_SENDER_ID=OTSC
 
 # Optional: WhatsApp Configuration

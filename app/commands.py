@@ -103,6 +103,61 @@ def register_commands(app):
 
         click.echo('=' * 60)
 
+    @app.cli.command('recalculate-member-stats')
+    @click.option('--apply', 'apply_changes', is_flag=True, default=False,
+                  help='Write the changes (default is a dry run that only reports)')
+    def recalculate_member_stats_command(apply_changes):
+        """Recompute consecutive months + qualification for every member"""
+        click.echo('=' * 60)
+        click.echo('Recalculate Member Contribution Stats')
+        click.echo('=' * 60)
+        click.echo(f'Mode: {"APPLY (writing changes)" if apply_changes else "DRY RUN (no changes written)"}')
+        click.echo('')
+
+        with app.app_context():
+            from app.models.member import Member
+
+            qualification_period = current_app.config.get('QUALIFICATION_PERIOD', 3)
+            members = Member.query.order_by(Member.member_number).all()
+
+            changed = []
+            for member in members:
+                old_months = member.consecutive_months_paid or 0
+                old_qualified = bool(member.qualified_for_benefits)
+
+                new_months = member.consecutive_months()
+                new_qualified = new_months >= qualification_period and member.status == 'Active'
+
+                if new_months != old_months or new_qualified != old_qualified:
+                    changed.append((member, old_months, new_months, old_qualified, new_qualified))
+
+                if apply_changes:
+                    member.update_contribution_stats()
+
+            if not changed:
+                click.secho('✓ No members need updating.', fg='green')
+            else:
+                click.echo(f'{len(changed)} member(s) affected:')
+                click.echo('')
+                for member, old_m, new_m, old_q, new_q in changed:
+                    flag = ''
+                    if old_q and not new_q:
+                        flag = click.style('  ← LOSES qualification', fg='red')
+                    elif new_q and not old_q:
+                        flag = click.style('  ← GAINS qualification', fg='green')
+                    click.echo(f'  {member.member_number} {member.full_name[:28]:28} '
+                               f'months {old_m} → {new_m}{flag}')
+
+            if apply_changes:
+                db.session.commit()
+                click.echo('')
+                click.secho(f'✓ Updated {len(members)} member(s).', fg='green')
+            else:
+                click.echo('')
+                click.secho('Dry run - nothing written. Re-run with --apply to commit.', fg='yellow')
+
+        click.echo('=' * 60)
+
     @app.cli.command('extend-overdue-loans')
     def extend_overdue_loans_command():
         """Auto-extend loans overdue by more than the grace period (run daily)"""

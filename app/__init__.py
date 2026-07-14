@@ -72,7 +72,7 @@ def create_app(config_name='development'):
     app.config['QUORUM_REQUIREMENT'] = int(os.getenv('QUORUM_REQUIREMENT', 5))
     app.config['SUSPENSION_THRESHOLD'] = int(os.getenv('SUSPENSION_THRESHOLD', 3))
     app.config['EXPULSION_THRESHOLD'] = int(os.getenv('EXPULSION_THRESHOLD', 6))
-    app.config['QUALIFICATION_PERIOD'] = int(os.getenv('QUALIFICATION_PERIOD', 5))
+    app.config['QUALIFICATION_PERIOD'] = int(os.getenv('QUALIFICATION_PERIOD', 3))
     app.config['EXPELLED_REFUND_PERCENTAGE'] = int(os.getenv('EXPELLED_REFUND_PERCENTAGE', 80))
 
     # Email/Notification configuration

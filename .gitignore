@@ -53,3 +53,10 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# graphify knowledge-graph output
+graphify-out/
+
+# local .env backups (contain real secrets)
+.env.bak*
+.env.*.bak

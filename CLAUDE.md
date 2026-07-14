@@ -100,8 +100,23 @@ Current business rules (see also memory `project_loan_rules.md`):
   changed 2026-05-20). Simple interest: `total = principal × (1 + rate/100 × months)`
   via `Loan.calculate_total_payable()`. NOTE: some hardcoded fallback defaults in
   code/README still say 5% — treat `.env`/`SystemSetting` as authoritative.
-- Loan eligibility: member must have ≥ 3 consecutive monthly contributions;
-  concurrent loans are allowed. Max repayment period: 2 months.
+- Loan eligibility: member must have ≥ 3 consecutive monthly contributions
+  (`LOAN_MIN_CONTRIBUTIONS`); concurrent loans are allowed. Max repayment period:
+  2 months.
+- **Guarantor qualification: 3 consecutive months** (`QUALIFICATION_PERIOD`, reduced
+  from 5 on 2026-07-14). Drives `Member.qualified_for_benefits`, which gates who can
+  appear in / act as a guarantor. Nothing else uses it (welfare does not).
+- **"Consecutive" means an unbroken run of months.** `Member.consecutive_months()`
+  counts distinct `Contribution.contribution_month` (`YYYY-MM`) values backwards from
+  the latest month, stopping at the first gap — so Jan/May/Oct is a streak of 1, not 3.
+  (Before 2026-07-14 this field was just a `count()` of contribution rows, so gaps were
+  ignored and members qualified who shouldn't have.) Multiple contributions in the same
+  month count once. After changing this logic or `QUALIFICATION_PERIOD`, run
+  `flask --app run recalculate-member-stats` (dry run) then `--apply`.
+- **UI must not hardcode business rules.** Loan templates read `config.LOAN_INTEREST_RATE`,
+  `config.LOAN_MIN_CONTRIBUTIONS`, `config.LOAN_MAX_PERIOD` and `config.QUALIFICATION_PERIOD`
+  via Jinja's `config` object. Do not reintroduce literals — the UI previously told members
+  "5% per month" while the system charged 10%.
 - **Early payoff (shorten):** an executive/admin can shorten an active loan's
   repayment period via `POST /loans/<id>/shorten`; interest is recomputed for the
   shorter period (`Loan.recompute_payable()`). e.g. a 2-month loan repaid within a
@@ -184,6 +199,8 @@ Defined in [run.py](run.py) and [app/commands.py](app/commands.py), run as
 - `send-loan-reminders` — notify on loans due tomorrow (designed for cron; see
   [send_loan_reminders.sh](send_loan_reminders.sh) and `docs/LOAN_REMINDER_SETUP.md`).
 - `check-overdue-loans`, `check-upcoming-loans --days N` — reporting.
+- `recalculate-member-stats [--apply]` — recompute every member's consecutive-months
+  streak and qualification. Dry run by default; reports who gains/loses qualification.
 - `extend-overdue-loans` — auto-extend loans overdue beyond the grace period
   (designed for a daily cron; see Loan business rules above).
 - `clear-database [--keep-admin]` — wipe data respecting FK order; keeps SuperAdmin.

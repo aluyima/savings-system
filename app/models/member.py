@@ -74,14 +74,46 @@ class Member(db.Model):
         if last_contribution:
             self.last_contribution_date = last_contribution.payment_date
 
-        # Calculate consecutive months (simplified - full logic would check month gaps)
-        contribution_count = Contribution.query.filter_by(member_id=self.id).count()
-        self.consecutive_months_paid = contribution_count
+        # Count the unbroken run of months ending at the most recent month contributed
+        self.consecutive_months_paid = self.consecutive_months()
 
-        # Update qualification status (5 consecutive months per specification)
+        # Update qualification status
         from flask import current_app
-        qualification_period = current_app.config.get('QUALIFICATION_PERIOD', 5)
+        qualification_period = current_app.config.get('QUALIFICATION_PERIOD', 3)
         self.qualified_for_benefits = self.consecutive_months_paid >= qualification_period
+
+    def consecutive_months(self):
+        """Length of the unbroken run of months ending at the latest month contributed.
+
+        contribution_month is stored as 'YYYY-MM' and a member may contribute more
+        than once in the same month, so the streak is counted over distinct months
+        rather than contribution rows. A gap resets the run: a member who paid in
+        January, May and October has a streak of 1, not 3.
+        """
+        from app.models.contribution import Contribution
+
+        rows = db.session.query(Contribution.contribution_month).filter_by(
+            member_id=self.id
+        ).distinct().all()
+
+        months = set()
+        for (contribution_month,) in rows:
+            try:
+                year, month = contribution_month.split('-')
+                months.add((int(year), int(month)))
+            except (AttributeError, ValueError):
+                continue  # ignore malformed contribution_month values
+
+        if not months:
+            return 0
+
+        streak = 0
+        year, month = max(months)
+        while (year, month) in months:
+            streak += 1
+            year, month = (year - 1, 12) if month == 1 else (year, month - 1)
+
+        return streak
 
     def is_active(self):
         """Check if member is active"""

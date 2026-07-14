@@ -44,7 +44,7 @@
                                 <option value="1">1 Month</option>
                                 <option value="2" selected>2 Months (Maximum)</option>
                             </select>
-                            <div class="form-text">Interest Rate: 5% per month</div>
+                            <div class="form-text">Interest Rate: {{ config.LOAN_INTEREST_RATE }}% per month</div>
                         </div>
 
                         <hr>
@@ -84,7 +84,7 @@
                                 </select>
                             </div>
                             <div class="alert alert-info">
-                                <small><i class="bi bi-info-circle"></i> Only <strong>qualified</strong> members (5+ consecutive months of contributions) appear in the guarantor list. Both guarantors must approve your loan before executive review.</small>
+                                <small><i class="bi bi-info-circle"></i> Only <strong>qualified</strong> members ({{ config.QUALIFICATION_PERIOD }}+ consecutive months of contributions) appear in the guarantor list. Both guarantors must approve your loan before executive review.</small>
                             </div>
                         </div>
 
@@ -138,13 +138,12 @@
                 <div class="card-body">
                     <ul>
                         <li>Must be an active member in good standing</li>
-                        <li>Must have contributed for at least 5 consecutive months</li>
+                        <li>Must have contributed for at least {{ config.LOAN_MIN_CONTRIBUTIONS }} consecutive months</li>
                         <li>Choose security type: Either two guarantors OR collateral</li>
                         <li>Collateral value must be at least equal to loan amount</li>
-                        <li>Maximum loan period is 2 months</li>
-                        <li>Interest rate is 5% per month</li>
+                        <li>Maximum loan period is {{ config.LOAN_MAX_PERIOD }} months</li>
+                        <li>Interest rate is {{ config.LOAN_INTEREST_RATE }}% per month</li>
                         <li>Requires approval from the executive committee</li>
-                        <li>Cannot have another active loan</li>
                     </ul>
                 </div>
             </div>

@@ -154,10 +154,10 @@ class SystemSetting(db.Model):
             # Membership Settings
             {
                 'setting_key': 'QUALIFICATION_PERIOD',
-                'setting_value': '5',
+                'setting_value': '3',
                 'setting_type': 'Integer',
                 'category': 'Membership',
-                'description': 'Consecutive months required to qualify for benefits',
+                'description': 'Consecutive months required to qualify for benefits (e.g. to act as a guarantor)',
                 'is_editable': True
             },
             {
