@@ -1,418 +1,294 @@
 {% extends "base.html" %}
 
-{% block title %}My Dashboard - Old Timers Savings Group{% endblock %}
+{% block title %}Home - Old Timers Savings Group{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2><i class="bi bi-person-circle"></i> Welcome, {{ member.full_name }}</h2>
-        <p class="text-muted mb-0">Member Number: <strong>{{ member.member_number }}</strong></p>
-    </div>
-    <div>
-        <span class="badge {% if qualified %}bg-success{% else %}bg-warning{% endif %} me-2">
-            {% if qualified %}Qualified for Benefits{% else %}Not Yet Qualified{% endif %}
-        </span>
-    </div>
-</div>
+{% set MONTHS = {'01':'Jan','02':'Feb','03':'Mar','04':'Apr','05':'May','06':'Jun',
+                 '07':'Jul','08':'Aug','09':'Sep','10':'Oct','11':'Nov','12':'Dec'} %}
 
-<!-- Quick Actions -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <i class="bi bi-lightning"></i> Quick Actions
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <a href="{{ url_for('loans.apply') }}" class="btn btn-info btn-lg w-100">
-                            <i class="bi bi-bank"></i><br>
-                            Apply for Loan
-                        </a>
-                    </div>
-                    <div class="col-md-4">
-                        <a href="{{ url_for('welfare.submit_request') }}" class="btn btn-danger btn-lg w-100">
-                            <i class="bi bi-heart"></i><br>
-                            Submit Welfare Request
-                        </a>
-                    </div>
-                    <div class="col-md-4">
-                        <a href="{{ url_for('reports.member_statement', member_id=member.id) }}" class="btn btn-secondary btn-lg w-100">
-                            <i class="bi bi-file-text"></i><br>
-                            View My Statement
-                        </a>
-                    </div>
+<div class="container-fluid" style="max-width: 900px;">
+
+    <!-- The passbook. Everything a member wants to know on opening the app:
+         what they have saved, and whether this month's stamp is missing. -->
+    <section class="passbook mb-4">
+        <div class="passbook-head">
+            <div>
+                <span class="label">Total saved</span>
+                <div class="money money-xl passbook-total">{{ total_contributed|format_currency }}</div>
+                <div style="color: var(--ink-soft);">
+                    {{ member.full_name }} &middot; {{ member.member_number }}
                 </div>
             </div>
+            <i class="bi bi-piggy-bank" style="font-size: 2rem; color: var(--rule);"></i>
         </div>
-    </div>
-</div>
 
-<!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            <h3>{{ total_contributed|format_currency }}</h3>
-            <p>Total Contributed</p>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            <h3>{{ consecutive_months }}</h3>
-            <p>Consecutive Months</p>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-            <h3>{{ active_loans|length }}</h3>
-            <p>Active Loans</p>
-        </div>
-    </div>
-</div>
-
-<!-- Current Month Contribution Status -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-calendar-check"></i> Current Month Contribution Status
+        <div class="stamp-strip">
+            {% for contribution in recent_contributions|reverse %}
+            <div class="stamp stamp-paid" title="Paid {{ contribution.contribution_month }}">
+                {{ MONTHS[contribution.contribution_month[5:7]] }}
             </div>
-            <div class="card-body">
-                {% if month_contribution %}
-                <div class="alert alert-success">
-                    <i class="bi bi-check-circle"></i>
-                    <strong>Paid for {{ current_month }}</strong><br>
-                    Amount: {{ month_contribution.amount|format_currency }}<br>
-                    Payment Date: {{ month_contribution.payment_date|format_date }}<br>
-                    Receipt: <strong>{{ month_contribution.receipt_number }}</strong>
-                </div>
+            {% endfor %}
+
+            {% if not month_contribution %}
+            <div class="stamp stamp-due" title="Not paid yet">
+                {{ MONTHS[current_month[5:7]] }}
+            </div>
+            {% endif %}
+
+            {% if not recent_contributions and month_contribution %}
+            <div class="stamp stamp-paid">{{ MONTHS[current_month[5:7]] }}</div>
+            {% endif %}
+        </div>
+
+        <div style="background: var(--card); padding-top: .5rem;">
+            {% if month_contribution %}
+            <p class="mb-0">
+                <strong style="color: var(--stamp);">
+                    <i class="bi bi-check-circle-fill"></i> You have paid for this month.
+                </strong>
+                {{ month_contribution.amount|format_currency }} on
+                {{ month_contribution.payment_date|format_date }} &middot;
+                receipt {{ month_contribution.receipt_number }}
+            </p>
+            {% else %}
+            <p class="mb-0">
+                <strong style="color: var(--clay);">
+                    <i class="bi bi-exclamation-circle-fill"></i> This month is not paid yet.
+                </strong>
+                Pay the treasurer to get your stamp for {{ MONTHS[current_month[5:7]] }}.
+            </p>
+            {% endif %}
+
+            <p class="mb-0 mt-2" style="color: var(--ink-soft);">
+                {% if consecutive_months %}
+                <strong>{{ consecutive_months }} month{{ 's' if consecutive_months != 1 }} in a row.</strong>
                 {% else %}
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    <strong>Not Yet Paid for {{ current_month }}</strong><br>
-                    Please make your monthly contribution to maintain your benefits qualification.
-                </div>
+                <strong>No months in a row yet.</strong>
                 {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Recent Contributions -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-cash-coin"></i> My Recent Contributions
-            </div>
-            <div class="card-body">
-                {% if recent_contributions %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Receipt No</th>
-                                <th>Amount</th>
-                                <th>Month</th>
-                                <th>Payment Date</th>
-                                <th>Method</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for contribution in recent_contributions %}
-                            <tr>
-                                <td><strong>{{ contribution.receipt_number }}</strong></td>
-                                <td>{{ contribution.amount|format_currency }}</td>
-                                <td>{{ contribution.contribution_month }}</td>
-                                <td>{{ contribution.payment_date|format_date }}</td>
-                                <td>
-                                    <span class="badge bg-info">{{ contribution.payment_method }}</span>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                {% if qualified %}
+                You can borrow, and you can guarantee another member's loan.
                 {% else %}
-                <p class="text-muted">No contributions recorded yet</p>
+                You need {{ config.LOAN_MIN_CONTRIBUTIONS }} months in a row before you can borrow.
                 {% endif %}
-            </div>
+            </p>
         </div>
-    </div>
-</div>
+    </section>
 
-<!-- Loan Requests & Active Loans -->
-{% if active_loans %}
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-bank"></i> My Loan Requests & Active Loans</span>
-                <a href="{{ url_for('loans.apply') }}" class="btn btn-sm btn-primary">
-                    <i class="bi bi-plus-circle"></i> New Application
-                </a>
+    <!-- Anything needing this member's attention comes before anything they might
+         merely want. A guarantor request is the one thing that blocks someone else. -->
+    {% if guarantor_requests %}
+    <section class="mb-4">
+        <div class="card" style="border-color: var(--clay); border-left-width: 5px;">
+            <div class="card-header" style="color: var(--clay);">
+                <i class="bi bi-hand-thumbs-up"></i>
+                Someone has asked you to stand for their loan
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Loan No</th>
-                                <th>Amount Requested</th>
-                                <th>Amount Approved</th>
-                                <th>Balance</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for loan in active_loans %}
-                            <tr>
-                                <td><strong>{{ loan.loan_number }}</strong></td>
-                                <td>{{ loan.amount_requested|format_currency }}</td>
-                                <td>
-                                    {% if loan.amount_approved %}
-                                    {{ loan.amount_approved|format_currency }}
-                                    {% else %}
-                                    <span class="text-muted">Pending</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if loan.balance %}
-                                    {{ loan.balance|format_currency }}
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if loan.status == 'Pending Guarantor Approval' %}
-                                    <span class="badge bg-warning">
-                                        <i class="bi bi-clock"></i> Pending Guarantors
-                                    </span>
-                                    {% elif loan.status == 'Returned to Applicant' %}
-                                    <span class="badge bg-danger">
-                                        <i class="bi bi-arrow-return-left"></i> Returned - Action Required
-                                    </span>
-                                    {% elif loan.status == 'Pending Executive Approval' %}
-                                    <span class="badge bg-info">
-                                        <i class="bi bi-hourglass-split"></i> Pending Executive Review
-                                    </span>
-                                    {% elif loan.status == 'Approved' %}
-                                    <span class="badge bg-info">
-                                        <i class="bi bi-check-circle"></i> Approved - Awaiting Disbursement
-                                    </span>
-                                    {% elif loan.status == 'Active' or loan.status == 'Disbursed' %}
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-cash"></i> Active
-                                    </span>
-                                    {% elif loan.status == 'Completed' %}
-                                    <span class="badge bg-secondary">
-                                        <i class="bi bi-check-all"></i> Completed
-                                    </span>
-                                    {% elif loan.status == 'Rejected' %}
-                                    <span class="badge bg-danger">
-                                        <i class="bi bi-x-circle"></i> Rejected
-                                    </span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">{{ loan.status }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if loan.status == 'Returned to Applicant' %}
-                                    <a href="{{ url_for('loans.edit_loan', id=loan.id) }}" class="btn btn-sm btn-warning">
-                                        <i class="bi bi-pencil"></i> Revise
-                                    </a>
-                                    {% else %}
-                                    <a href="{{ url_for('loans.view_loan', id=loan.id) }}" class="btn btn-sm btn-info">
-                                        <i class="bi bi-eye"></i> View
-                                    </a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- Guarantor Requests - Loans where member needs to approve as guarantor -->
-{% if guarantor_requests %}
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card border-warning">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">
-                    <i class="bi bi-exclamation-triangle-fill"></i> Pending Guarantor Approval Requests
-                    <span class="badge bg-dark">{{ guarantor_requests|length }}</span>
-                </h5>
-            </div>
-            <div class="card-body">
-                <p class="alert alert-warning">
-                    <i class="bi bi-info-circle"></i> You have been selected as a guarantor for the following loan(s). Please review and approve or decline each request.
-                </p>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Loan No</th>
-                                <th>Applicant</th>
-                                <th>Amount</th>
-                                <th>Purpose</th>
-                                <th>Your Role</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for loan in guarantor_requests %}
-                            <tr>
-                                <td><strong>{{ loan.loan_number }}</strong></td>
-                                <td>{{ loan.member.full_name }}<br><small class="text-muted">{{ loan.member.member_number }}</small></td>
-                                <td>{{ loan.amount_requested|format_currency }}</td>
-                                <td>{{ loan.purpose[:50] }}{% if loan.purpose|length > 50 %}...{% endif %}</td>
-                                <td>
-                                    {% if loan.guarantor1_id == member.id %}
-                                    <span class="badge bg-info">Guarantor #1</span>
-                                    {% else %}
-                                    <span class="badge bg-info">Guarantor #2</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if loan.status == 'Pending Guarantor Approval' %}
-                                    <span class="badge bg-warning text-dark">
-                                        <i class="bi bi-clock"></i> Waiting for Approval
-                                    </span>
-                                    {% elif loan.status == 'Returned to Applicant' %}
-                                    <span class="badge bg-secondary">
-                                        <i class="bi bi-arrow-return-left"></i> Returned
-                                    </span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{{ url_for('loans.view_loan', id=loan.id) }}" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-eye"></i> Review & Respond
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- Welfare Requests -->
-{% if welfare_requests %}
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-heart"></i> My Welfare Requests</span>
-                <a href="{{ url_for('welfare.submit_request') }}" class="btn btn-sm btn-danger">
-                    <i class="bi bi-plus-circle"></i> New Request
-                </a>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Request No</th>
-                                <th>Type</th>
-                                <th>Amount Requested</th>
-                                <th>Amount Approved</th>
-                                <th>Submitted Date</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for request in welfare_requests %}
-                            <tr>
-                                <td><strong>{{ request.request_number }}</strong></td>
-                                <td><span class="badge bg-secondary">{{ request.request_type }}</span></td>
-                                <td>{{ request.amount_requested|format_currency }}</td>
-                                <td>
-                                    {% if request.amount_approved %}
-                                    {{ request.amount_approved|format_currency }}
-                                    {% else %}
-                                    <span class="text-muted">Pending</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ request.submitted_date.strftime('%d/%m/%Y') }}</td>
-                                <td>
-                                    {% if request.status == 'Submitted' or request.status == 'Pending' %}
-                                    <span class="badge bg-warning">
-                                        <i class="bi bi-clock"></i> Pending Review
-                                    </span>
-                                    {% elif request.status == 'Approved' %}
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> Approved
-                                    </span>
-                                    {% elif request.status == 'Paid' %}
-                                    <span class="badge bg-info">
-                                        <i class="bi bi-cash"></i> Paid
-                                    </span>
-                                    {% elif request.status == 'Rejected' %}
-                                    <span class="badge bg-danger">
-                                        <i class="bi bi-x-circle"></i> Rejected
-                                    </span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">{{ request.status }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{{ url_for('welfare.view_request', id=request.id) }}" class="btn btn-sm btn-info">
-                                        <i class="bi bi-eye"></i> View
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="text-center mt-2">
-                    <a href="{{ url_for('welfare.list_requests') }}" class="btn btn-sm btn-outline-secondary">
-                        View All My Requests <i class="bi bi-arrow-right"></i>
+                <p>You were named as a guarantor. Until you answer, their loan cannot move.</p>
+                {% for loan in guarantor_requests %}
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 py-3"
+                     style="border-top: 1px solid var(--rule);">
+                    <div>
+                        <div style="font-weight: 700;">{{ loan.member.full_name }}</div>
+                        <div style="color: var(--ink-soft);">
+                            wants {{ loan.amount_requested|format_currency }} &middot; {{ loan.purpose|truncate(48) }}
+                        </div>
+                    </div>
+                    <a href="{{ url_for('loans.view_loan', id=loan.id) }}" class="btn btn-warning">
+                        Answer
                     </a>
                 </div>
+                {% endfor %}
             </div>
         </div>
-    </div>
-</div>
-{% endif %}
+    </section>
+    {% endif %}
 
-<!-- Upcoming Meetings -->
-{% if upcoming_meetings %}
-<div class="row">
-    <div class="col-md-12">
+    <!-- What can I do here? Three plain choices, each saying what it does. -->
+    <section class="mb-4">
+        <h2 class="h5 mb-3">What would you like to do?</h2>
+        <div class="d-grid gap-2">
+            <a href="{{ url_for('loans.apply') }}" class="btn-action">
+                <i class="bi bi-bank"></i>
+                <span>
+                    Ask for a loan
+                    <span class="btn-action-sub">Borrow money and pay it back with interest</span>
+                </span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+            <a href="{{ url_for('welfare.submit_request') }}" class="btn-action">
+                <i class="bi bi-heart"></i>
+                <span>
+                    Ask for welfare help
+                    <span class="btn-action-sub">For a bereavement, sickness or celebration</span>
+                </span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+            <a href="{{ url_for('reports.member_statement', member_id=member.id) }}" class="btn-action">
+                <i class="bi bi-journal-text"></i>
+                <span>
+                    See all my records
+                    <span class="btn-action-sub">Every contribution, loan and payment</span>
+                </span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- My loans -->
+    {% if active_loans %}
+    <section class="mb-4">
         <div class="card">
-            <div class="card-header">
-                <i class="bi bi-calendar-event"></i> Upcoming Meetings
-            </div>
+            <div class="card-header"><i class="bi bi-bank"></i> My loans</div>
             <div class="card-body">
-                <ul class="list-group list-group-flush">
-                    {% for meeting in upcoming_meetings %}
-                    <li class="list-group-item">
-                        <strong>{{ meeting.meeting_type }}</strong><br>
-                        <small class="text-muted">
-                            <i class="bi bi-calendar"></i> {{ meeting.meeting_date|format_date }}
-                            <i class="bi bi-clock"></i> {{ meeting.meeting_time.strftime('%H:%M') }}
-                        </small><br>
-                        <small><i class="bi bi-geo-alt"></i> {{ meeting.venue }}</small>
-                    </li>
-                    {% endfor %}
-                </ul>
+                <table class="table table-cards align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Loan</th><th>Amount</th><th>Still to pay</th><th>Stage</th><th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in active_loans %}
+                        <tr>
+                            <td data-label="Loan"><strong>{{ loan.loan_number }}</strong></td>
+                            <td data-label="Amount" class="money">
+                                {{ (loan.amount_approved or loan.amount_requested)|format_currency }}
+                                {% if not loan.amount_approved %}<span class="badge bg-secondary">asked for</span>{% endif %}
+                            </td>
+                            <td data-label="Still to pay" class="money">
+                                {% if loan.balance %}{{ loan.balance|format_currency }}{% else %}&mdash;{% endif %}
+                            </td>
+                            <td data-label="Stage">
+                                {% if loan.status == 'Pending Guarantor Approval' %}
+                                <span class="badge bg-warning">Waiting for your guarantors</span>
+                                {% elif loan.status == 'Returned to Applicant' %}
+                                <span class="badge bg-danger">Sent back to you</span>
+                                {% elif loan.status == 'Pending Executive Approval' %}
+                                <span class="badge bg-info">With the committee</span>
+                                {% elif loan.status == 'Approved' %}
+                                <span class="badge bg-info">Approved, money on the way</span>
+                                {% elif loan.status in ['Active', 'Disbursed'] %}
+                                <span class="badge bg-success">Paying back</span>
+                                {% elif loan.status == 'Completed' %}
+                                <span class="badge bg-secondary">Finished</span>
+                                {% elif loan.status == 'Rejected' %}
+                                <span class="badge bg-danger">Turned down</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ loan.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Action">
+                                {% if loan.status == 'Returned to Applicant' %}
+                                <a href="{{ url_for('loans.edit_loan', id=loan.id) }}" class="btn btn-warning">Fix and send again</a>
+                                {% else %}
+                                <a href="{{ url_for('loans.view_loan', id=loan.id) }}" class="btn btn-outline-secondary">Open</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
+    </section>
+    {% endif %}
+
+    <!-- My welfare requests -->
+    {% if welfare_requests %}
+    <section class="mb-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-heart"></i> My welfare requests</div>
+            <div class="card-body">
+                <table class="table table-cards align-middle mb-0">
+                    <thead>
+                        <tr><th>Request</th><th>For</th><th>Amount</th><th>Stage</th><th>Action</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for request in welfare_requests %}
+                        <tr>
+                            <td data-label="Request"><strong>{{ request.request_number }}</strong></td>
+                            <td data-label="For">{{ request.request_type }}</td>
+                            <td data-label="Amount" class="money">
+                                {{ (request.amount_approved or request.amount_requested)|format_currency }}
+                            </td>
+                            <td data-label="Stage">
+                                {% if request.status in ['Submitted', 'Pending'] %}
+                                <span class="badge bg-warning">Being looked at</span>
+                                {% elif request.status == 'Approved' %}
+                                <span class="badge bg-success">Approved</span>
+                                {% elif request.status == 'Paid' %}
+                                <span class="badge bg-success">Paid to you</span>
+                                {% elif request.status == 'Rejected' %}
+                                <span class="badge bg-danger">Turned down</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ request.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Action">
+                                <a href="{{ url_for('welfare.view_request', id=request.id) }}" class="btn btn-outline-secondary">Open</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Recent contributions -->
+    <section class="mb-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-cash-coin"></i> My last payments</div>
+            <div class="card-body">
+                {% if recent_contributions %}
+                <table class="table table-cards align-middle mb-0">
+                    <thead>
+                        <tr><th>Receipt</th><th>Amount</th><th>For month</th><th>Paid on</th><th>How</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for contribution in recent_contributions %}
+                        <tr>
+                            <td data-label="Receipt"><strong>{{ contribution.receipt_number }}</strong></td>
+                            <td data-label="Amount" class="money">{{ contribution.amount|format_currency }}</td>
+                            <td data-label="For month">
+                                {{ MONTHS[contribution.contribution_month[5:7]] }} {{ contribution.contribution_month[:4] }}
+                            </td>
+                            <td data-label="Paid on">{{ contribution.payment_date|format_date }}</td>
+                            <td data-label="How">{{ contribution.payment_method }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty">
+                    <i class="bi bi-cash-coin"></i>
+                    No payments recorded yet. Pay the treasurer and your first stamp appears here.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Upcoming meetings -->
+    {% if upcoming_meetings %}
+    <section class="mb-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-calendar-event"></i> Next meetings</div>
+            <div class="card-body">
+                {% for meeting in upcoming_meetings %}
+                <div class="py-3 {% if not loop.first %}border-top{% endif %}" style="border-color: var(--rule) !important;">
+                    <div style="font-weight: 700;">{{ meeting.meeting_type }}</div>
+                    <div style="color: var(--ink-soft);">
+                        {{ meeting.meeting_date|format_date }} at {{ meeting.meeting_time.strftime('%H:%M') }}
+                        &middot; {{ meeting.venue }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
 </div>
-{% endif %}
 {% endblock %}

@@ -1,0 +1,411 @@
+/*
+ * Old Timers Savings Group - interface styles
+ *
+ * Written for the people who actually use this: older members, on cheap
+ * Android phones, paying for their own mobile data. Two rules follow from that:
+ *
+ *   1. No web fonts, no heavy assets. The system font stack costs nothing to
+ *      download and is already tuned for the device. Character comes from the
+ *      type scale, not the typeface.
+ *   2. Nothing important is hidden. No hamburger for primary navigation, no
+ *      horizontal scrolling, one action per row, large touch targets.
+ *
+ * Layered on top of Bootstrap 5 - it overrides, it does not replace.
+ */
+
+:root {
+    /* Palette: the savings passbook - ledger paper, stamp ink, red clay */
+    --ink:        #14211C;   /* text: a green-black, not a pure black */
+    --ink-soft:   #5A6B62;   /* secondary text */
+    --ledger:     #F1F3EE;   /* page: pale ledger paper, not cream */
+    --card:       #FFFFFF;
+    --rule:       #D6DCD3;   /* hairline rules, as in a ruled book */
+    --stamp:      #1E6F52;   /* money in, paid, confirmed */
+    --stamp-soft: #E3F0E9;
+    --clay:       #C4581F;   /* act now, attention */
+    --clay-soft:  #FBEAE0;
+    --alert:      #A62B1F;   /* something is wrong */
+    --alert-soft: #F9E3E1;
+
+    --radius:     14px;
+    --tap:        52px;      /* minimum touch target - bigger than the 44px floor */
+    --bottom-nav: 64px;
+
+    --shadow:     0 1px 2px rgba(20, 33, 28, .06), 0 4px 16px rgba(20, 33, 28, .06);
+}
+
+/* ---------- Foundations ---------- */
+
+body {
+    background: var(--ledger);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;          /* readable without glasses; never below 16px */
+    line-height: 1.55;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* Room for the bottom tab bar so it never covers the last control. */
+@media (max-width: 991.98px) {
+    body { padding-bottom: calc(var(--bottom-nav) + env(safe-area-inset-bottom, 0px) + 8px); }
+}
+
+h1, h2, h3, h4 { color: var(--ink); font-weight: 700; letter-spacing: -.01em; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.15rem; }
+
+a { color: var(--stamp); }
+
+/* Money is the point of this app: give it tabular figures so columns line up. */
+.money {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    letter-spacing: -.02em;
+}
+.money-xl { font-size: 2.4rem; line-height: 1.1; }
+.money-lg { font-size: 1.5rem; }
+
+/* A receipt-header micro-label. Used sparingly, to name a value. */
+.label {
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+}
+
+/* ---------- Cards ---------- */
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--rule);
+    font-weight: 700;
+    padding: .9rem 1.1rem;
+}
+.card-body { padding: 1.1rem; }
+
+/* ---------- The passbook ---------- */
+/*
+ * The signature element. Members know the treasurer's booklet: every month you
+ * pay, your square gets stamped. This turns the abstract "consecutive months"
+ * rule into the object they already understand - and shows, without a sentence
+ * of explanation, whether this month's stamp is missing.
+ */
+.passbook {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.25rem;
+}
+.passbook-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    /* the double rule under a passbook's balance line */
+    border-bottom: 2px solid var(--ink);
+}
+.passbook-total {
+    color: var(--stamp);
+    white-space: nowrap;           /* "UGX 1,450,000" must never break in two */
+    font-size: clamp(1.75rem, 8.5vw, 2.4rem);
+}
+
+.stamp-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    padding: 1rem 0 .25rem;
+}
+.stamp {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: .78rem;
+    font-weight: 700;
+    flex: 0 0 auto;
+}
+/* A month that was paid: stamped in green ink, tilted like a real stamp. */
+.stamp-paid {
+    background: var(--stamp-soft);
+    color: var(--stamp);
+    border: 2px solid var(--stamp);
+    transform: rotate(-4deg);
+}
+/* This month, still unpaid: the empty square waiting for its stamp. */
+.stamp-due {
+    background: transparent;
+    color: var(--clay);
+    border: 2px dashed var(--clay);
+}
+
+/* ---------- Buttons: big, obvious, one job each ---------- */
+
+.btn {
+    min-height: var(--tap);
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1.02rem;
+    padding: .7rem 1.15rem;
+}
+.btn-lg { min-height: 60px; font-size: 1.1rem; }
+
+.btn-primary,
+.btn-success { background: var(--stamp); border-color: var(--stamp); color: #fff; }
+.btn-primary:hover, .btn-primary:focus,
+.btn-success:hover, .btn-success:focus { background: #17583F; border-color: #17583F; }
+
+.btn-warning { background: var(--clay); border-color: var(--clay); color: #fff; }
+.btn-warning:hover, .btn-warning:focus { background: #A8481420; background: #A84814; border-color: #A84814; color: #fff; }
+
+.btn-danger { background: var(--alert); border-color: var(--alert); color: #fff; }
+
+.btn-outline-secondary { border-color: var(--rule); color: var(--ink); }
+.btn-outline-secondary:hover { background: var(--ledger); color: var(--ink); border-color: var(--ink-soft); }
+
+/* The one big action on a screen. */
+.btn-action {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    width: 100%;
+    text-align: left;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+    min-height: 68px;
+    color: var(--ink);
+    text-decoration: none;
+    box-shadow: var(--shadow);
+    font-weight: 600;
+}
+.btn-action:hover, .btn-action:focus { border-color: var(--stamp); color: var(--ink); }
+.btn-action .bi { font-size: 1.5rem; color: var(--stamp); flex: 0 0 auto; }
+.btn-action .btn-action-sub { display: block; font-weight: 400; font-size: .88rem; color: var(--ink-soft); }
+.btn-action .bi-chevron-right { margin-left: auto; font-size: 1rem; color: var(--ink-soft); }
+
+/* ---------- Forms ---------- */
+
+.form-control, .form-select {
+    min-height: var(--tap);
+    font-size: 17px;          /* >=16px or iOS zooms the whole page */
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: .7rem .9rem;
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--stamp);
+    box-shadow: 0 0 0 4px var(--stamp-soft);
+}
+.form-label { font-weight: 600; margin-bottom: .35rem; }
+.form-text { color: var(--ink-soft); }
+
+/* ---------- Status: say it in words, not just colour ---------- */
+
+.badge { font-size: .8rem; font-weight: 700; padding: .45em .7em; border-radius: 999px; }
+.badge.bg-success  { background: var(--stamp)  !important; }
+.badge.bg-warning  { background: var(--clay)   !important; color: #fff !important; }
+.badge.bg-danger   { background: var(--alert)  !important; }
+.badge.bg-info     { background: #1F5673       !important; color: #fff !important; }
+.badge.bg-secondary{ background: var(--ink-soft) !important; }
+
+/* ---------- Alerts: what happened, and what to do ---------- */
+
+.alert {
+    border: 1px solid transparent;
+    border-left-width: 5px;
+    border-radius: 10px;
+    font-size: 1rem;
+    padding: 1rem 1.1rem;
+}
+.alert-success { background: var(--stamp-soft); border-color: var(--stamp); color: #12503A; }
+.alert-warning { background: var(--clay-soft);  border-color: var(--clay);  color: #7A3411; }
+.alert-danger  { background: var(--alert-soft); border-color: var(--alert); color: #7C2018; }
+.alert-info    { background: #E7EFF3;           border-color: #1F5673;      color: #1B4257; }
+
+/* ---------- Row cards: what tables become on a phone ---------- */
+/*
+ * A table with seven columns is unusable at 360px - it scrolls sideways and the
+ * action ends up off-screen. Mark a table `.table-cards` and each row becomes a
+ * self-contained card, with each cell labelled by its column heading.
+ */
+@media (max-width: 767.98px) {
+    .table-cards thead { display: none; }
+    .table-cards, .table-cards tbody, .table-cards tr, .table-cards td { display: block; width: 100%; }
+    .table-cards tr {
+        background: var(--card);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        margin-bottom: .85rem;
+        padding: .35rem .25rem;
+    }
+    .table-cards td {
+        border: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: .55rem .9rem;
+        text-align: right;
+    }
+    /* The column heading, carried down as a label on each cell. */
+    .table-cards td::before {
+        content: attr(data-label);
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        text-align: left;
+        flex: 0 0 auto;
+    }
+    /* The action is a full-width button at the foot of the card. */
+    .table-cards td[data-label="Action"] { display: block; text-align: left; padding: .6rem .9rem .8rem; }
+    .table-cards td[data-label="Action"]::before { display: block; margin-bottom: .4rem; }
+    .table-cards td[data-label="Action"] .btn { width: 100%; }
+}
+
+/*
+ * Safety net for the screens not yet converted to row cards. A wide table that
+ * is not wrapped in .table-responsive drags the whole page sideways, and a page
+ * that scrolls sideways is how people get lost. Contain the scroll inside the
+ * card instead - the page itself must never move horizontally.
+ */
+@media (max-width: 767.98px) {
+    /* any table not converted to row cards scrolls within itself, not the page */
+    table.table:not(.table-cards) {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    html, body { overflow-x: hidden; max-width: 100%; }
+}
+
+/* ---------- Bottom tab bar: primary navigation lives in the thumb zone ---------- */
+
+.tabbar { display: none; }
+
+@media (max-width: 991.98px) {
+    .tabbar {
+        display: flex;
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        z-index: 1030;
+        background: var(--card);
+        border-top: 1px solid var(--rule);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        box-shadow: 0 -2px 16px rgba(20, 33, 28, .08);
+    }
+    .tabbar a {
+        flex: 1 1 0;
+        min-height: var(--bottom-nav);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        text-decoration: none;
+        color: var(--ink-soft);
+        font-size: .7rem;
+        font-weight: 600;
+        padding: .35rem .15rem;
+    }
+    .tabbar a .bi { font-size: 1.35rem; }
+    .tabbar a.active { color: var(--stamp); }
+    .tabbar a.active .bi { color: var(--stamp); }
+    /* the label is always visible - never an icon on its own */
+    .tabbar a span { line-height: 1.1; text-align: center; }
+}
+
+/* The "More" sheet: everything that isn't a primary destination. */
+.sheet-link {
+    display: flex;
+    align-items: center;
+    gap: .9rem;
+    padding: 1rem .25rem;
+    min-height: var(--tap);
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 600;
+}
+.sheet-link .bi { font-size: 1.35rem; color: var(--stamp); }
+.sheet-link:hover { color: var(--stamp); }
+
+/* ---------- Top bar ---------- */
+
+.topbar {
+    background: var(--ink);
+    color: #fff;
+}
+/* An explicit single row. Left: who we are. Right: messages and sign out.
+   Everything else is in the tab bar, where a thumb can reach it. */
+.topbar__inner {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 56px;
+    padding: 0 1rem;
+}
+.topbar a { color: #fff; text-decoration: none; }
+.topbar .brand {
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -.01em;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    white-space: nowrap;
+}
+.topbar .brand .bi { font-size: 1.3rem; }
+.topbar__right { display: flex; align-items: center; gap: .25rem; flex: 0 0 auto; }
+.topbar .nav-link {
+    color: rgba(255,255,255,.82);
+    font-weight: 600;
+    padding: .45rem .7rem;
+    min-height: 0;               /* must not stack the bar into two rows */
+    display: inline-flex;
+    align-items: center;
+}
+.topbar .nav-link:hover, .topbar .nav-link.active { color: #fff; }
+.topbar .nav-link .bi { font-size: 1.25rem; }
+
+/* ---------- Empty states: an invitation, not a shrug ---------- */
+
+.empty {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--ink-soft);
+}
+.empty .bi { font-size: 2.4rem; color: var(--rule); display: block; margin-bottom: .6rem; }
+
+/* ---------- Accessibility floor ---------- */
+
+:focus-visible {
+    outline: 3px solid var(--clay);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+    }
+    .stamp-paid { transform: none; }
+}
