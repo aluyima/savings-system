@@ -1,174 +1,218 @@
 {% extends "base.html" %}
 
-{% block title %}Executive Dashboard - Old Timers Savings Group{% endblock %}
+{% block title %}Home - Old Timers Savings Group{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-speedometer2"></i> Executive Dashboard</h2>
-    <div>
-        <span class="badge bg-primary">{{ current_user.role }}</span>
-    </div>
-</div>
+{% set paid_pct = ((month_contributions / total_members * 100) | round | int) if total_members else 0 %}
+{% set decisions = pending_loans + pending_welfare %}
 
-<!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            <h3>{{ total_members }}</h3>
-            <p>Total Active Members</p>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            <h3>{{ active_members }}</h3>
-            <p>Qualified Members</p>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-            <h3>{{ month_contributions }}</h3>
-            <p>This Month Contributions</p>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-            <h3>{{ month_total|format_currency }}</h3>
-            <p>Total This Month</p>
-        </div>
-    </div>
-</div>
+<div class="container-fluid" style="max-width: 1100px;">
 
-<!-- Action Required Section -->
-<div class="row mb-4">
-    <div class="col-md-6">
+    <!-- The collection sheet. A treasurer opens this to answer one question:
+         how much has come in this month, and who is still missing? -->
+    <section class="passbook mb-4">
+        <div class="passbook-head">
+            <div>
+                <span class="label">Collected this month</span>
+                <div class="money money-xl passbook-total">{{ month_total|format_currency }}</div>
+                <div style="color: var(--ink-soft);">
+                    {{ month_contributions }} of {{ total_members }} member{{ 's' if total_members != 1 }} have paid
+                </div>
+            </div>
+            <i class="bi bi-journal-check" style="font-size: 2rem; color: var(--rule);"></i>
+        </div>
+
+        <div class="pt-3">
+            <div class="collect-bar" role="img"
+                 aria-label="{{ paid_pct }} percent of members have paid this month">
+                <span style="width: {{ paid_pct }}%;"></span>
+            </div>
+            <div class="d-flex justify-content-between mt-2" style="color: var(--ink-soft);">
+                <span><strong style="color: var(--stamp);">{{ paid_pct }}%</strong> paid</span>
+                <span>{{ total_members - month_contributions }} still to pay</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- What is waiting on this executive. Members cannot move until these are
+         answered, so they come before anything else on the page. -->
+    <section class="mb-4">
+        <h2 class="h5 mb-3">
+            Waiting for your decision
+            {% if decisions %}<span class="badge bg-warning ms-1">{{ decisions }}</span>{% endif %}
+        </h2>
+
+        {% if decisions %}
+        <div class="d-grid gap-2">
+            {% if pending_loans %}
+            <a href="{{ url_for('loans.list_loans') }}" class="btn-action">
+                <i class="bi bi-bank"></i>
+                <span>
+                    {{ pending_loans }} loan application{{ 's' if pending_loans != 1 }} to review
+                    <span class="btn-action-sub">The member is waiting on the committee</span>
+                </span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+            {% endif %}
+            {% if pending_welfare %}
+            <a href="{{ url_for('welfare.list_requests') }}" class="btn-action">
+                <i class="bi bi-heart"></i>
+                <span>
+                    {{ pending_welfare }} welfare request{{ 's' if pending_welfare != 1 }} to review
+                    <span class="btn-action-sub">Someone has asked the group for help</span>
+                </span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% else %}
         <div class="card">
-            <div class="card-header">
-                <i class="bi bi-exclamation-circle"></i> Action Required
-            </div>
-            <div class="card-body">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        Pending Welfare Requests
-                        <span class="badge bg-warning">{{ pending_welfare }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        Pending Loan Applications
-                        <span class="badge bg-info">{{ pending_loans }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        Active Loans
-                        <span class="badge bg-success">{{ active_loans }}</span>
-                    </li>
-                </ul>
+            <div class="card-body empty">
+                <i class="bi bi-check-circle"></i>
+                Nothing is waiting on you. Loans and welfare requests will appear here.
             </div>
         </div>
-    </div>
+        {% endif %}
+    </section>
 
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-calendar-event"></i> Upcoming Meetings
+    <!-- The group at a glance. Numbers, not gradients: each one is a real count
+         a treasurer would be asked for in a meeting. -->
+    <section class="mb-4">
+        <div class="row g-2">
+            <div class="col-6 col-lg-3">
+                <div class="figure-card">
+                    <span class="label">Active members</span>
+                    <div class="money money-lg">{{ total_members }}</div>
+                </div>
             </div>
-            <div class="card-body">
-                {% if upcoming_meetings %}
-                <ul class="list-group list-group-flush">
-                    {% for meeting in upcoming_meetings %}
-                    <li class="list-group-item">
-                        <strong>{{ meeting.meeting_type }}</strong><br>
-                        <small class="text-muted">
-                            <i class="bi bi-calendar"></i> {{ meeting.meeting_date|format_date }}
-                            <i class="bi bi-clock"></i> {{ meeting.meeting_time.strftime('%H:%M') }}
-                        </small><br>
-                        <small><i class="bi bi-geo-alt"></i> {{ meeting.venue }}</small>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="text-muted">No upcoming meetings scheduled</p>
-                {% endif %}
+            <div class="col-6 col-lg-3">
+                <div class="figure-card">
+                    <span class="label">Can borrow</span>
+                    <div class="money money-lg">{{ active_members }}</div>
+                    <span class="figure-note">{{ config.QUALIFICATION_PERIOD }}+ months in a row</span>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="figure-card">
+                    <span class="label">Loans running</span>
+                    <div class="money money-lg">{{ active_loans }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="figure-card">
+                    <span class="label">Paid this month</span>
+                    <div class="money money-lg">{{ month_contributions }}</div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
+    </section>
 
-<!-- Recent Contributions -->
-<div class="row">
-    <div class="col-md-12">
+    <!-- The jobs an executive actually does, in the order they do them. -->
+    <section class="mb-4">
+        <h2 class="h5 mb-3">Record something</h2>
+        <div class="d-grid gap-2">
+            <a href="{{ url_for('contributions.add_contribution') }}" class="btn-action">
+                <i class="bi bi-cash-coin"></i>
+                <span>
+                    Record a contribution
+                    <span class="btn-action-sub">A member has paid their monthly money</span>
+                </span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+            <a href="{{ url_for('members.add_member') }}" class="btn-action">
+                <i class="bi bi-person-plus"></i>
+                <span>
+                    Add a new member
+                    <span class="btn-action-sub">Register someone who has joined the group</span>
+                </span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+            <a href="{{ url_for('meetings.schedule_meeting') }}" class="btn-action">
+                <i class="bi bi-calendar-plus"></i>
+                <span>
+                    Schedule a meeting
+                    <span class="btn-action-sub">Set the date, time and venue</span>
+                </span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+            <a href="{{ url_for('reports.reports_index') }}" class="btn-action">
+                <i class="bi bi-file-bar-graph"></i>
+                <span>
+                    Open the reports
+                    <span class="btn-action-sub">Money in, money out, loans and welfare</span>
+                </span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- Latest money in -->
+    <section class="mb-4">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-cash-coin"></i> Recent Contributions</span>
-                <a href="{{ url_for('contributions.list_contributions') }}" class="btn btn-sm btn-light">View All</a>
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span><i class="bi bi-cash-coin"></i> Latest payments</span>
+                <a href="{{ url_for('contributions.list_contributions') }}" class="btn btn-outline-secondary btn-sm">
+                    See all
+                </a>
             </div>
             <div class="card-body">
                 {% if recent_contributions %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Receipt No</th>
-                                <th>Member</th>
-                                <th>Amount</th>
-                                <th>Month</th>
-                                <th>Payment Date</th>
-                                <th>Method</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for contribution in recent_contributions %}
-                            <tr>
-                                <td><strong>{{ contribution.receipt_number }}</strong></td>
-                                <td>{{ contribution.member.full_name }}</td>
-                                <td>{{ contribution.amount|format_currency }}</td>
-                                <td>{{ contribution.contribution_month }}</td>
-                                <td>{{ contribution.payment_date|format_date }}</td>
-                                <td>
-                                    <span class="badge bg-info">{{ contribution.payment_method }}</span>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                <table class="table table-cards align-middle mb-0">
+                    <thead>
+                        <tr><th>Member</th><th>Amount</th><th>For month</th><th>Paid on</th><th>Receipt</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for contribution in recent_contributions %}
+                        <tr>
+                            <td data-label="Member"><strong>{{ contribution.member.full_name }}</strong></td>
+                            <td data-label="Amount" class="money">{{ contribution.amount|format_currency }}</td>
+                            <td data-label="For month">{{ contribution.contribution_month }}</td>
+                            <td data-label="Paid on">{{ contribution.payment_date|format_date }}</td>
+                            <td data-label="Receipt">{{ contribution.receipt_number }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
                 {% else %}
-                <p class="text-muted">No recent contributions</p>
+                <div class="empty">
+                    <i class="bi bi-cash-coin"></i>
+                    No payments recorded yet this month. Record the first one above.
+                </div>
                 {% endif %}
             </div>
         </div>
-    </div>
-</div>
+    </section>
 
-<!-- Quick Actions -->
-<div class="row mt-4">
-    <div class="col-md-12">
+    <!-- Meetings -->
+    <section class="mb-4">
         <div class="card">
-            <div class="card-header">
-                <i class="bi bi-lightning"></i> Quick Actions
-            </div>
+            <div class="card-header"><i class="bi bi-calendar-event"></i> Next meetings</div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3 mb-2">
-                        <a href="{{ url_for('members.add_member') }}" class="btn btn-outline-primary w-100">
-                            <i class="bi bi-person-plus"></i> Add Member
-                        </a>
+                {% if upcoming_meetings %}
+                {% for meeting in upcoming_meetings %}
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 py-3
+                            {% if not loop.first %}border-top{% endif %}"
+                     style="border-color: var(--rule) !important;">
+                    <div>
+                        <div style="font-weight: 700;">{{ meeting.meeting_type }}</div>
+                        <div style="color: var(--ink-soft);">
+                            {{ meeting.meeting_date|format_date }} at {{ meeting.meeting_time.strftime('%H:%M') }}
+                            &middot; {{ meeting.venue }}
+                        </div>
                     </div>
-                    <div class="col-md-3 mb-2">
-                        <a href="{{ url_for('contributions.add_contribution') }}" class="btn btn-outline-success w-100">
-                            <i class="bi bi-cash"></i> Record Contribution
-                        </a>
-                    </div>
-                    <div class="col-md-3 mb-2">
-                        <a href="{{ url_for('meetings.schedule_meeting') }}" class="btn btn-outline-info w-100">
-                            <i class="bi bi-calendar-plus"></i> Schedule Meeting
-                        </a>
-                    </div>
-                    <div class="col-md-3 mb-2">
-                        <a href="{{ url_for('reports.reports_index') }}" class="btn btn-outline-warning w-100">
-                            <i class="bi bi-file-earmark-text"></i> Generate Report
-                        </a>
-                    </div>
+                    <a href="{{ url_for('meetings.view_meeting', id=meeting.id) }}"
+                       class="btn btn-outline-secondary btn-sm">Open</a>
                 </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty">
+                    <i class="bi bi-calendar-event"></i>
+                    No meeting is scheduled. Set one above so members know when to come.
+                </div>
+                {% endif %}
             </div>
         </div>
-    </div>
+    </section>
+
 </div>
 {% endblock %}

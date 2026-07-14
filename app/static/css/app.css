@@ -150,6 +150,34 @@ a { color: var(--stamp); }
     border: 2px dashed var(--clay);
 }
 
+/* The month's collection, as a bar. A treasurer reads "how far are we" from the
+   length of the green, before reading a single number. */
+.collect-bar {
+    height: 14px;
+    border-radius: 999px;
+    background: var(--ledger);
+    border: 1px solid var(--rule);
+    overflow: hidden;
+}
+.collect-bar span {
+    display: block;
+    height: 100%;
+    background: var(--stamp);
+    border-radius: 999px;
+}
+
+/* A plain figure. Not a gradient tile - the number is the point. */
+.figure-card {
+    height: 100%;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: .9rem 1rem;
+}
+.figure-card .money-lg { color: var(--ink); margin-top: .15rem; }
+.figure-note { display: block; font-size: .78rem; color: var(--ink-soft); }
+
 /* ---------- Buttons: big, obvious, one job each ---------- */
 
 .btn {
