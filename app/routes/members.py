@@ -75,7 +75,7 @@ def view_member(id):
     from app.models.loan import Loan
     active_loans = Loan.query.filter(
         Loan.member_id == id,
-        Loan.status.in_(['Disbursed', 'Repaying'])
+        Loan.status.in_(['Disbursed', 'Active'])
     ).all()
 
     return render_template('members/view.html',

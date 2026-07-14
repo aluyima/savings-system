@@ -296,14 +296,18 @@ def get_status_badge_class(status):
         'Expelled': 'danger',
         'Deceased': 'dark',
 
-        # Loan statuses
-        'Pending': 'warning',
+        # Loan statuses (must match Loan.status - see app/models/loan.py)
+        'Pending Guarantor Approval': 'warning',
+        'Pending Executive Approval': 'info',
+        'Returned to Applicant': 'danger',
         'Approved': 'success',
         'Rejected': 'danger',
         'Disbursed': 'primary',
-        'Repaying': 'info',
         'Completed': 'success',
         'Defaulted': 'danger',
+
+        # ActionItem status
+        'Pending': 'warning',
 
         # Welfare statuses
         'Submitted': 'info',

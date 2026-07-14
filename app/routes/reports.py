@@ -110,8 +110,11 @@ def financial_summary():
         Loan.status == 'Active'
     ).scalar() or 0
 
-    # Pending Welfare Requests
-    pending_welfare_count = WelfareRequest.query.filter_by(status='Pending').count()
+    # Welfare requests still awaiting a decision. WelfareRequest statuses are
+    # Submitted / UnderReview / Approved / Rejected / Paid - there is no 'Pending'.
+    pending_welfare_count = WelfareRequest.query.filter(
+        WelfareRequest.status.in_(['Submitted', 'UnderReview'])
+    ).count()
     pending_welfare_amount = db.session.query(func.sum(WelfareRequest.amount_approved)).filter(
         and_(
             WelfareRequest.status == 'Approved',
@@ -321,7 +324,7 @@ def welfare_report():
     # Summary statistics
     total_requests = len(requests)
     approved_requests = [r for r in requests if r.status == 'Approved']
-    pending_requests = [r for r in requests if r.status == 'Pending']
+    pending_requests = [r for r in requests if r.status in ('Submitted', 'UnderReview')]
     rejected_requests = [r for r in requests if r.status == 'Rejected']
 
     total_approved_amount = sum(r.amount_approved or 0 for r in approved_requests)

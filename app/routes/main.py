@@ -61,11 +61,12 @@ def executive_dashboard():
     # Pending welfare requests
     pending_welfare = WelfareRequest.query.filter_by(status='Submitted').count()
 
-    # Pending loan applications
-    pending_loans = Loan.query.filter_by(status='Pending').count()
+    # Loan applications waiting on an executive decision. Note the status must be
+    # one the state machine actually produces - 'Pending' is not one of them.
+    pending_loans = Loan.query.filter_by(status='Pending Executive Approval').count()
 
-    # Active loans
-    active_loans = Loan.query.filter(Loan.status.in_(['Disbursed', 'Repaying'])).count()
+    # Active loans ('Active' is the status after disbursement; 'Repaying' does not exist)
+    active_loans = Loan.query.filter(Loan.status.in_(['Disbursed', 'Active'])).count()
 
     # Upcoming meetings
     upcoming_meetings = Meeting.query.filter(
