@@ -161,6 +161,32 @@ class Loan(db.Model):
         if self.status in ['Active', 'Disbursed'] and self.balance <= 0:
             self.status = 'Completed'
 
+    def recompute_from_repayments(self):
+        """Recalculate total_paid, balance and status from the repayment rows that
+        currently exist, rather than by adjusting the running totals.
+
+        Used when a repayment is reversed (deleted) by an administrator, so the
+        denormalized tracking fields can never drift away from the LoanRepayment
+        records that back them. Recomputing from source also self-corrects a total
+        that had already drifted.
+
+        Caller must flush a pending delete before calling this, so the removed row
+        is excluded from the sum. Returns the new balance (None if the loan has no
+        total_payable yet, i.e. it was never approved).
+        """
+        paid = sum(float(r.amount_paid or 0) for r in self.repayments)
+        self.total_paid = paid
+
+        if self.total_payable is None:
+            return None
+
+        self.balance = float(self.total_payable) - paid
+        # Reversing a payment can re-open a loan that the payment had closed.
+        # 'Defaulted' is a separate business decision and is deliberately left alone.
+        if self.status == 'Completed' and self.balance > 0:
+            self.status = 'Active'
+        return self.balance
+
     def extend_one_month(self):
         """Extend the repayment period by one month, adding one month's interest on
         the principal and pushing the due date out a month.

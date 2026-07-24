@@ -999,3 +999,101 @@ def delete_loan(id):
 
     flash(f'Loan application {loan_number} has been deleted.', 'success')
     return redirect(url_for('loans.list_loans'))
+
+
+@loans.route('/<int:id>/repayments/<int:repayment_id>/delete', methods=['POST'])
+@login_required
+@super_admin_required
+def delete_repayment(id, repayment_id):
+    """Reverse a wrongly entered loan repayment (SuperAdmin only).
+
+    Deletes the LoanRepayment row and recomputes the loan's total_paid, balance
+    and status from the repayments that remain, so a mistyped amount can be
+    corrected without hand-editing the database. A reason is mandatory and is
+    written to Loan.recovery_notes, which keeps the correction on the loan record
+    itself in addition to the audit log.
+    """
+    loan = Loan.query.get_or_404(id)
+
+    # Scope the repayment to this loan so a crafted id cannot reverse a payment
+    # recorded against a different loan.
+    repayment = LoanRepayment.query.filter_by(id=repayment_id, loan_id=loan.id).first()
+    if repayment is None:
+        flash('That repayment does not belong to this loan.', 'danger')
+        return redirect(url_for('loans.view_loan', id=id))
+
+    reason = (request.form.get('reason') or '').strip()
+    if len(reason) < 5:
+        flash('Please give a reason for deleting this repayment (at least 5 characters).', 'danger')
+        return redirect(url_for('loans.view_loan', id=id))
+
+    # Capture details before the row disappears
+    receipt_number = repayment.receipt_number or f'#{repayment.id}'
+    amount = float(repayment.amount_paid or 0)
+    payment_date = repayment.payment_date
+    status_before = loan.status
+    balance_before = float(loan.balance or 0)
+
+    db.session.delete(repayment)
+    db.session.flush()  # exclude the deleted row from the recompute below
+    loan.recompute_from_repayments()
+
+    # Keep a permanent trace on the loan itself, not just in the audit log
+    entry = (f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC] Repayment {receipt_number} of "
+             f"UGX {amount:,.0f} dated {payment_date.strftime('%d/%m/%Y')} was deleted by "
+             f"{current_user.username}. Reason: {reason}")
+    loan.recovery_notes = f'{loan.recovery_notes}\n{entry}' if loan.recovery_notes else entry
+
+    db.session.commit()
+
+    # Log action
+    from app.models.audit import AuditLog
+    AuditLog.log_action(
+        user_id=current_user.id,
+        action_type='LoanRepaymentDeleted',
+        entity_type='LoanRepayment',
+        entity_id=repayment_id,
+        description=(f'Deleted repayment {receipt_number} of UGX {amount:,.0f} on loan '
+                     f'{loan.loan_number}. Reason: {reason}. Balance {balance_before:,.0f} '
+                     f'-> {float(loan.balance or 0):,.0f}'),
+        ip_address=request.remote_addr,
+        user_agent=request.user_agent.string
+    )
+
+    _notify_repayment_deleted(loan, receipt_number, amount, reason)
+
+    msg = (f'Repayment {receipt_number} of UGX {amount:,.0f} has been deleted. '
+           f'New balance: UGX {float(loan.balance or 0):,.0f}.')
+    if status_before == 'Completed' and loan.status == 'Active':
+        msg += ' The loan was re-opened as Active because a balance is now outstanding.'
+    flash(msg, 'success')
+    return redirect(url_for('loans.view_loan', id=id))
+
+
+def _notify_repayment_deleted(loan, receipt_number, amount, reason):
+    """Notify the borrower and the executives that a repayment was reversed.
+
+    Money coming off a member's loan record must never be silent, so both the
+    borrower and every executive/admin are told, whoever performed the correction.
+    """
+    from app.models.notification import Notification
+    from app.models.user import User
+
+    title = f'Repayment reversed on loan {loan.loan_number}'
+    message = (f'A repayment of UGX {amount:,.0f} (receipt {receipt_number}) recorded against loan '
+               f'{loan.loan_number} was entered in error and has been removed. Reason: {reason}. '
+               f'The outstanding balance is now UGX {float(loan.balance or 0):,.0f}.')
+    link = f'/loans/{loan.id}'
+
+    if loan.member and getattr(loan.member, 'user', None):
+        Notification.create_notification(
+            user_id=loan.member.user.id, title=title, message=message,
+            notification_type='Warning', category='Loan', link_url=link, priority='High'
+        )
+
+    exec_user_ids = [u.id for u in User.query.filter(User.role.in_(['Executive', 'SuperAdmin'])).all()]
+    if exec_user_ids:
+        Notification.create_bulk_notification(
+            user_ids=exec_user_ids, title=title, message=message,
+            notification_type='Warning', category='Loan', link_url=link, priority='High'
+        )

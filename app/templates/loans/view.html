@@ -229,7 +229,9 @@
             </div>
 
             <!-- Repayments -->
-            {% if loan.status in ['Active', 'Disbursed', 'Completed'] %}
+            {# Defaulted is included so a wrongly entered repayment on a defaulted
+               loan can still be reviewed and corrected. #}
+            {% if loan.status in ['Active', 'Disbursed', 'Completed', 'Defaulted'] %}
             <div class="card mb-4">
                 <div class="card-header">
                     <h5>Repayment History</h5>
@@ -246,6 +248,9 @@
                                     <th>Principal</th>
                                     <th>Interest</th>
                                     <th>Method</th>
+                                    {% if current_user.is_super_admin() %}
+                                    <th class="text-end">Action</th>
+                                    {% endif %}
                                 </tr>
                             </thead>
                             <tbody>
@@ -257,11 +262,90 @@
                                     <td>{{ format_currency(repayment.principal_portion) }}</td>
                                     <td>{{ format_currency(repayment.interest_portion) }}</td>
                                     <td>{{ repayment.payment_method }}</td>
+                                    {% if current_user.is_super_admin() %}
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#deleteRepaymentModal{{ repayment.id }}"
+                                                title="Delete this repayment">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                    {% endif %}
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
+
+                    {% if current_user.is_super_admin() %}
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Deleting a repayment removes it permanently and recalculates the loan
+                        balance. Use it only to correct a wrongly entered amount &mdash; the
+                        borrower and the executives are notified of every reversal.
+                    </p>
+
+                    <!-- Delete-repayment confirmation modals (SuperAdmin only) -->
+                    {% for repayment in repayments %}
+                    <div class="modal fade" id="deleteRepaymentModal{{ repayment.id }}" tabindex="-1"
+                         aria-labelledby="deleteRepaymentLabel{{ repayment.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <form method="POST"
+                                  action="{{ url_for('loans.delete_repayment', id=loan.id, repayment_id=repayment.id) }}">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="deleteRepaymentLabel{{ repayment.id }}">
+                                            <i class="bi bi-exclamation-triangle text-danger"></i>
+                                            Delete repayment {{ repayment.receipt_number }}?
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p class="mb-2">
+                                            You are about to permanently remove this repayment from loan
+                                            <strong>{{ loan.loan_number }}</strong>:
+                                        </p>
+                                        <ul class="list-unstyled small mb-3">
+                                            <li><strong>Receipt:</strong> {{ repayment.receipt_number }}</li>
+                                            <li><strong>Date:</strong> {{ repayment.payment_date.strftime('%d/%m/%Y') }}</li>
+                                            <li><strong>Amount:</strong> {{ format_currency(repayment.amount_paid) }}</li>
+                                            <li><strong>Method:</strong> {{ repayment.payment_method }}</li>
+                                        </ul>
+                                        <p class="small mb-3">
+                                            The balance will change from
+                                            <strong>{{ format_currency(loan.balance) }}</strong> to
+                                            <strong>{{ format_currency((loan.balance or 0) + (repayment.amount_paid or 0)) }}</strong>.
+                                            {% if loan.status == 'Completed' %}
+                                            This loan is marked <strong>Completed</strong> and will be
+                                            re-opened as <strong>Active</strong> if a balance remains.
+                                            {% endif %}
+                                        </p>
+                                        <label for="reason{{ repayment.id }}" class="form-label">
+                                            Reason for deletion <span class="text-danger">*</span>
+                                        </label>
+                                        <textarea class="form-control" id="reason{{ repayment.id }}" name="reason"
+                                                  rows="2" minlength="5" required
+                                                  placeholder="e.g. Amount entered in error - member paid a different sum"></textarea>
+                                        <div class="form-text">
+                                            Recorded against the loan and in the audit log. This cannot be undone.
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                            Cancel
+                                        </button>
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="bi bi-trash"></i> Delete Repayment
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
                     {% else %}
                     <p class="text-muted">No repayments recorded yet</p>
                     {% endif %}
