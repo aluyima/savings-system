@@ -159,7 +159,12 @@ def add_contribution():
     # Get all active members for dropdown
     members = Member.query.filter_by(status='Active').order_by(Member.member_number).all()
 
-    return render_template('contributions/add.html', current_month=current_month, members=members)
+    # Allow a member to be pre-selected via ?member_id= so the dashboard's
+    # "still to pay" list can jump straight to recording that member's payment.
+    selected_member_id = request.args.get('member_id', type=int)
+
+    return render_template('contributions/add.html', current_month=current_month,
+                           members=members, selected_member_id=selected_member_id)
 
 
 @contributions.route('/<int:id>')

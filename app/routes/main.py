@@ -2,7 +2,7 @@
 Main Routes
 Dashboard and home page routes
 """
-from flask import Blueprint, render_template, redirect, url_for, request, abort
+from flask import Blueprint, render_template, redirect, url_for, request, abort, current_app
 from flask_login import login_required, current_user
 from app import db
 from app.models.member import Member
@@ -13,7 +13,7 @@ from app.models.meeting import Meeting
 from app.models.notification import Notification
 from app.utils.decorators import password_change_required
 from sqlalchemy import func, extract
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 main = Blueprint('main', __name__)
 
@@ -53,10 +53,39 @@ def executive_dashboard():
     month_contributions = Contribution.query.filter_by(contribution_month=current_month).count()
 
     # Total contributed this month
-    from sqlalchemy import func
     month_total = db.session.query(func.sum(Contribution.amount)).filter_by(
         contribution_month=current_month
     ).scalar() or 0
+
+    # What the group is aiming to collect this month: every active member's
+    # standard monthly contribution. This gives the collected figure a
+    # denominator, so an empty early-month dashboard reads as "0 of X expected"
+    # instead of a bare "UGX 0".
+    from app.models.system import SystemSetting
+    monthly_contribution = SystemSetting.get_setting(
+        'MONTHLY_CONTRIBUTION', current_app.config.get('MONTHLY_CONTRIBUTION', 100000)
+    )
+    expected_total = (total_members or 0) * (monthly_contribution or 0)
+
+    # Last month's final collection, for a like-for-like comparison. Members pay
+    # towards the end of the month, so most of the month this is the only real
+    # money figure the treasurer has to look at.
+    prev = date.today().replace(day=1) - timedelta(days=1)
+    last_month = prev.strftime('%Y-%m')
+    last_month_label = prev.strftime('%B')
+    last_month_total = db.session.query(func.sum(Contribution.amount)).filter_by(
+        contribution_month=last_month
+    ).scalar() or 0
+
+    # Members who have NOT paid for the active month yet - the treasurer's chase
+    # list. This is the most useful thing to show while collection is still open.
+    paid_member_ids = db.session.query(Contribution.member_id).filter_by(
+        contribution_month=current_month
+    ).subquery()
+    unpaid_members = Member.query.filter(
+        Member.status == 'Active',
+        ~Member.id.in_(db.session.query(paid_member_ids))
+    ).order_by(Member.member_number).all()
 
     # Pending welfare requests
     pending_welfare = WelfareRequest.query.filter_by(status='Submitted').count()
@@ -87,6 +116,11 @@ def executive_dashboard():
                          active_members=active_members,
                          month_contributions=month_contributions,
                          month_total=month_total,
+                         expected_total=expected_total,
+                         monthly_contribution=monthly_contribution,
+                         last_month_total=last_month_total,
+                         last_month_label=last_month_label,
+                         unpaid_members=unpaid_members,
                          pending_welfare=pending_welfare,
                          pending_loans=pending_loans,
                          active_loans=active_loans,

@@ -16,7 +16,8 @@
                 <span class="label">Collected this month</span>
                 <div class="money money-xl passbook-total">{{ month_total|format_currency }}</div>
                 <div style="color: var(--ink-soft);">
-                    {{ month_contributions }} of {{ total_members }} member{{ 's' if total_members != 1 }} have paid
+                    of {{ expected_total|format_currency }} expected
+                    &middot; {{ month_contributions }} of {{ total_members }} member{{ 's' if total_members != 1 }} paid
                 </div>
             </div>
             <i class="bi bi-journal-check" style="font-size: 2rem; color: var(--rule);"></i>
@@ -30,6 +31,11 @@
             <div class="d-flex justify-content-between mt-2" style="color: var(--ink-soft);">
                 <span><strong style="color: var(--stamp);">{{ paid_pct }}%</strong> paid</span>
                 <span>{{ total_members - month_contributions }} still to pay</span>
+            </div>
+            <div class="mt-2" style="color: var(--ink-soft); font-size: .92rem;">
+                <i class="bi bi-clock-history"></i>
+                {{ last_month_label }}'s final collection was <strong>{{ last_month_total|format_currency }}</strong>.
+                Most members pay towards the end of the month.
             </div>
         </div>
     </section>
@@ -73,6 +79,50 @@
             </div>
         </div>
         {% endif %}
+    </section>
+
+    <!-- The chase list. Members pay towards month-end, so for most of the month
+         the useful question is not "how much came in" but "who still owes". This
+         turns the quiet early-month dashboard into the treasurer's working list. -->
+    <section class="mb-4">
+        <h2 class="h5 mb-3">
+            Still to pay this month
+            {% if unpaid_members %}<span class="badge bg-clay ms-1">{{ unpaid_members|length }}</span>{% endif %}
+        </h2>
+
+        <div class="card">
+            {% if unpaid_members %}
+            <div class="card-body pb-1">
+                <p class="mb-3" style="color: var(--ink-soft);">
+                    {{ unpaid_members|length }} member{{ 's' if unpaid_members|length != 1 }}
+                    {{ 'have' if unpaid_members|length != 1 else 'has' }} not paid for
+                    the current month yet. Record a payment as each one comes in.
+                </p>
+                <div class="chase-list">
+                    {% for m in unpaid_members %}
+                    <div class="chase-row">
+                        <div class="chase-who">
+                            <span class="chase-name">{{ m.full_name }}</span>
+                            <span class="chase-meta">
+                                {{ m.member_number }}
+                                {% if m.phone_primary %}&middot; <a href="tel:{{ m.phone_primary }}">{{ m.phone_primary }}</a>{% endif %}
+                            </span>
+                        </div>
+                        <a href="{{ url_for('contributions.add_contribution', member_id=m.id) }}"
+                           class="btn btn-success btn-sm chase-record">
+                            <i class="bi bi-cash-coin"></i> Record
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="card-body empty">
+                <i class="bi bi-check-circle"></i>
+                Every member has paid for this month. Nothing to chase.
+            </div>
+            {% endif %}
+        </div>
     </section>
 
     <!-- The group at a glance. Numbers, not gradients: each one is a real count

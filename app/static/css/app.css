@@ -248,6 +248,42 @@ a { color: var(--stamp); }
 .badge.bg-danger   { background: var(--alert)  !important; }
 .badge.bg-info     { background: #1F5673       !important; color: #fff !important; }
 .badge.bg-secondary{ background: var(--ink-soft) !important; }
+.badge.bg-clay     { background: var(--clay)   !important; color: #fff !important; }
+
+/* ---------- The chase list: members who still owe this month ---------- */
+
+.chase-list {
+    display: flex;
+    flex-direction: column;
+}
+.chase-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .8rem 0;
+    border-top: 1px solid var(--rule);
+}
+.chase-row:first-child { border-top: 0; }
+.chase-who { min-width: 0; }        /* let long names truncate instead of pushing the button */
+.chase-name {
+    display: block;
+    font-weight: 700;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chase-meta { display: block; font-size: .88rem; color: var(--ink-soft); }
+.chase-meta a { color: var(--ink-soft); text-decoration: none; }
+.chase-meta a:hover { color: var(--stamp); text-decoration: underline; }
+.chase-record {
+    flex: 0 0 auto;
+    min-height: var(--tap);        /* keep the tap target above the 44px floor */
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+}
 
 /* ---------- Alerts: what happened, and what to do ---------- */
 

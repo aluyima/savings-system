@@ -17,7 +17,7 @@
                             <select class="form-select" id="member_id" name="member_id" required autofocus>
                                 <option value="">Choose a member...</option>
                                 {% for member in members %}
-                                <option value="{{ member.id }}">{{ member.member_number }} - {{ member.full_name }}</option>
+                                <option value="{{ member.id }}" {{ 'selected' if member.id == selected_member_id }}>{{ member.member_number }} - {{ member.full_name }}</option>
                                 {% endfor %}
                             </select>
                             <div class="form-text">Select the member making the contribution</div>
