@@ -130,6 +130,17 @@ Current business rules (see also memory `project_loan_rules.md`):
   meant to run **daily** (cron / PythonAnywhere scheduled task). Extensions are
   recorded in `Loan.recovery_notes` and notified in-app to borrower + executives;
   they are not audit-logged (no acting user in the job).
+- **Interest freeze (SuperAdmin only):** an admin can freeze interest accrual on a
+  running loan via `POST /loans/<id>/freeze-interest` (and resume with
+  `/unfreeze-interest`). A frozen loan (`Loan.interest_frozen`) is **skipped by
+  `apply_overdue_extensions()`**, so no further monthly interest is added and its due
+  date stops advancing; nothing else (overdue display, reminders, repayments) changes.
+  Freezing is gated by `Loan.can_freeze_interest()` — Active/Disbursed, balance > 0,
+  not already frozen, and **at least one month since disbursement**
+  (`Loan.months_since_disbursement() >= 1`). Both actions require a reason, write to
+  `recovery_notes` + `AuditLog`, and notify borrower + executives. Unfreezing resumes
+  accrual **going forward only** — the frozen period is not back-charged. Schema added
+  via `migrations/add_loan_interest_freeze.py`.
 - Loan approval is two-stage: **guarantors** (both must approve) or collateral,
   then **executives**, then disbursement. `Loan.status` is a string state machine
   (`Pending Guarantor Approval → Pending Executive Approval → Approved →
@@ -170,6 +181,15 @@ lifecycle on a member's behalf. Rules (all in [app/routes/loans.py](app/routes/l
   `Loan.can_be_deleted()` — permitted only **before executive approval**, and never
   once the loan is disbursed or (for guarantor-backed loans) already guaranteed by
   both guarantors. Collateral loans are deletable up until executive approval.
+- **Reverse a wrongly entered repayment** (`POST /loans/<id>/repayments/<rid>/delete`,
+  SuperAdmin only): deletes the `LoanRepayment` and recomputes the loan's `total_paid`,
+  `balance` and `status` from the rows that remain via
+  `Loan.recompute_from_repayments()` (re-opens a Completed loan as Active if a balance
+  reappears). A reason is required and is written to `recovery_notes` + `AuditLog`;
+  borrower + executives are notified. Replaces the old hand-edit-the-DB workaround.
+- **Freeze / resume loan interest** (`POST /loans/<id>/freeze-interest` and
+  `/unfreeze-interest`, SuperAdmin only): see the interest-freeze bullet under
+  business rules above.
 - **The administrator is not a group member and cannot borrow.** A loan may not be
   filed for a member whose linked user is a `SuperAdmin` (server guard in `apply`),
   and admin accounts are excluded from the borrower dropdown.

@@ -3,7 +3,7 @@ Loan and Loan Repayment Models
 Handles loan applications, approvals, and repayments
 """
 from app import db
-from datetime import datetime
+from datetime import datetime, date
 
 
 class Loan(db.Model):
@@ -69,6 +69,15 @@ class Loan(db.Model):
     application_fee_recorded_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     application_fee_notes = db.Column(db.Text)
 
+    # Interest freeze (SuperAdmin only). When frozen, the daily overdue
+    # auto-extension job skips this loan, so no further monthly interest is added
+    # and the due date stops advancing. Everything else (overdue display,
+    # reminders, repayments) is unaffected.
+    interest_frozen = db.Column(db.Boolean, default=False)
+    interest_frozen_date = db.Column(db.DateTime)
+    interest_frozen_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    interest_frozen_reason = db.Column(db.Text)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -79,6 +88,7 @@ class Loan(db.Model):
     secretary = db.relationship('User', foreign_keys=[approved_by_secretary])
     treasurer = db.relationship('User', foreign_keys=[approved_by_treasurer])
     application_fee_recorder = db.relationship('User', foreign_keys=[application_fee_recorded_by])
+    interest_frozen_by_user = db.relationship('User', foreign_keys=[interest_frozen_by])
     repayments = db.relationship('LoanRepayment', backref='loan', lazy='dynamic')
 
     def __repr__(self):
@@ -203,6 +213,36 @@ class Loan(db.Model):
         if self.due_date:
             self.due_date = self.due_date + relativedelta(months=1)
         return added_interest
+
+    def months_since_disbursement(self):
+        """Whole calendar months the loan has been running since disbursement.
+
+        Returns 0 if the loan has not been disbursed.
+        """
+        if not self.disbursement_date:
+            return 0
+        from dateutil.relativedelta import relativedelta
+        today = date.today()
+        if today <= self.disbursement_date:
+            return 0
+        return relativedelta(today, self.disbursement_date).months + \
+            12 * relativedelta(today, self.disbursement_date).years
+
+    def can_freeze_interest(self):
+        """Whether an administrator may freeze interest accrual on this loan.
+
+        Permitted only for a live loan that is still accruing (Active/Disbursed
+        with a balance), is not already frozen, and has been running for at least
+        one month since disbursement - the freeze is meant for loans that have
+        already had time to run, not brand-new disbursements.
+        """
+        if self.interest_frozen:
+            return False
+        if self.status not in ['Active', 'Disbursed']:
+            return False
+        if float(self.balance or 0) <= 0:
+            return False
+        return self.months_since_disbursement() >= 1
 
 
 class LoanRepayment(db.Model):

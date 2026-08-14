@@ -1097,3 +1097,134 @@ def _notify_repayment_deleted(loan, receipt_number, amount, reason):
             user_ids=exec_user_ids, title=title, message=message,
             notification_type='Warning', category='Loan', link_url=link, priority='High'
         )
+
+
+@loans.route('/<int:id>/freeze-interest', methods=['POST'])
+@login_required
+@super_admin_required
+def freeze_interest(id):
+    """Freeze interest accrual on a running loan (SuperAdmin only).
+
+    A frozen loan is skipped by the daily overdue auto-extension job, so no more
+    monthly interest is added and its due date stops advancing. Only allowed once
+    the loan has been running at least a month (Loan.can_freeze_interest()).
+    Everything else - overdue display, reminders, repayments - is unchanged.
+    """
+    loan = Loan.query.get_or_404(id)
+
+    if not loan.can_freeze_interest():
+        flash('Interest cannot be frozen on this loan. It must be an active loan '
+              'with an outstanding balance that has been running for at least one month.', 'danger')
+        return redirect(url_for('loans.view_loan', id=id))
+
+    reason = (request.form.get('reason') or '').strip()
+    if len(reason) < 5:
+        flash('Please give a reason for freezing interest (at least 5 characters).', 'danger')
+        return redirect(url_for('loans.view_loan', id=id))
+
+    loan.interest_frozen = True
+    loan.interest_frozen_date = datetime.utcnow()
+    loan.interest_frozen_by = current_user.id
+    loan.interest_frozen_reason = reason
+
+    entry = (f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC] Interest frozen by "
+             f"{current_user.username} at balance UGX {float(loan.balance or 0):,.0f}. Reason: {reason}")
+    loan.recovery_notes = f'{loan.recovery_notes}\n{entry}' if loan.recovery_notes else entry
+
+    db.session.commit()
+
+    from app.models.audit import AuditLog
+    AuditLog.log_action(
+        user_id=current_user.id,
+        action_type='LoanInterestFrozen',
+        entity_type='Loan',
+        entity_id=loan.id,
+        description=(f'Froze interest on loan {loan.loan_number} at balance '
+                     f'UGX {float(loan.balance or 0):,.0f}. Reason: {reason}'),
+        ip_address=request.remote_addr,
+        user_agent=request.user_agent.string
+    )
+
+    _notify_interest_freeze(loan, frozen=True, reason=reason)
+
+    flash(f'Interest on loan {loan.loan_number} has been frozen. The balance will no '
+          f'longer grow while frozen.', 'success')
+    return redirect(url_for('loans.view_loan', id=id))
+
+
+@loans.route('/<int:id>/unfreeze-interest', methods=['POST'])
+@login_required
+@super_admin_required
+def unfreeze_interest(id):
+    """Resume interest accrual on a frozen loan (SuperAdmin only).
+
+    Clears the freeze so the overdue auto-extension job considers the loan again.
+    Interest is not applied retroactively for the frozen period - accrual simply
+    resumes from the current due date going forward.
+    """
+    loan = Loan.query.get_or_404(id)
+
+    if not loan.interest_frozen:
+        flash('This loan is not frozen.', 'warning')
+        return redirect(url_for('loans.view_loan', id=id))
+
+    reason = (request.form.get('reason') or '').strip()
+    if len(reason) < 5:
+        flash('Please give a reason for unfreezing interest (at least 5 characters).', 'danger')
+        return redirect(url_for('loans.view_loan', id=id))
+
+    loan.interest_frozen = False
+    loan.interest_frozen_date = None
+    loan.interest_frozen_by = None
+    loan.interest_frozen_reason = None
+
+    entry = (f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC] Interest unfrozen by "
+             f"{current_user.username}. Reason: {reason}")
+    loan.recovery_notes = f'{loan.recovery_notes}\n{entry}' if loan.recovery_notes else entry
+
+    db.session.commit()
+
+    from app.models.audit import AuditLog
+    AuditLog.log_action(
+        user_id=current_user.id,
+        action_type='LoanInterestUnfrozen',
+        entity_type='Loan',
+        entity_id=loan.id,
+        description=f'Resumed interest on loan {loan.loan_number}. Reason: {reason}',
+        ip_address=request.remote_addr,
+        user_agent=request.user_agent.string
+    )
+
+    _notify_interest_freeze(loan, frozen=False, reason=reason)
+
+    flash(f'Interest on loan {loan.loan_number} has resumed.', 'success')
+    return redirect(url_for('loans.view_loan', id=id))
+
+
+def _notify_interest_freeze(loan, frozen, reason):
+    """Notify the borrower and the executives that interest was frozen or resumed."""
+    from app.models.notification import Notification
+    from app.models.user import User
+
+    if frozen:
+        title = f'Interest frozen on loan {loan.loan_number}'
+        message = (f'Interest on loan {loan.loan_number} has been frozen. The outstanding balance '
+                   f'of UGX {float(loan.balance or 0):,.0f} will not grow while frozen. Reason: {reason}.')
+    else:
+        title = f'Interest resumed on loan {loan.loan_number}'
+        message = (f'Interest on loan {loan.loan_number} has resumed accruing from now on. '
+                   f'Reason: {reason}.')
+    link = f'/loans/{loan.id}'
+
+    if loan.member and getattr(loan.member, 'user', None):
+        Notification.create_notification(
+            user_id=loan.member.user.id, title=title, message=message,
+            notification_type='Info', category='Loan', link_url=link, priority='Normal'
+        )
+
+    exec_user_ids = [u.id for u in User.query.filter(User.role.in_(['Executive', 'SuperAdmin'])).all()]
+    if exec_user_ids:
+        Notification.create_bulk_notification(
+            user_ids=exec_user_ids, title=title, message=message,
+            notification_type='Info', category='Loan', link_url=link, priority='Normal'
+        )

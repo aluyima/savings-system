@@ -275,7 +275,10 @@ def apply_overdue_extensions(grace_days=None):
         Loan.status.in_(['Active', 'Disbursed']),
         Loan.balance > 0,
         Loan.due_date.isnot(None),
-        Loan.due_date < today
+        Loan.due_date < today,
+        # Frozen loans no longer accrue interest; skip them entirely.
+        # isnot(True) also keeps legacy rows where the flag is NULL.
+        Loan.interest_frozen.isnot(True)
     ).all()
 
     extended = []

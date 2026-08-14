@@ -376,7 +376,24 @@
                             <th>Balance:</th>
                             <td><strong>{{ format_currency(loan.balance or 0) }}</strong></td>
                         </tr>
+                        {% if loan.interest_frozen %}
+                        <tr>
+                            <th>Interest:</th>
+                            <td>
+                                <span class="badge bg-info text-dark">
+                                    <i class="bi bi-snow"></i> Frozen
+                                </span>
+                            </td>
+                        </tr>
+                        {% endif %}
                     </table>
+
+                    {% if loan.interest_frozen %}
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-snow"></i> Interest is frozen &mdash; the balance will not
+                        grow while frozen.
+                    </p>
+                    {% endif %}
 
                     {% if loan.balance > 0 %}
                     <div class="progress mt-2">
@@ -385,6 +402,57 @@
                             {{ progress }}%
                         </div>
                     </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Interest Freeze (SuperAdmin only) -->
+            {% if current_user.is_super_admin() and (loan.can_freeze_interest() or loan.interest_frozen) %}
+            <div class="card mb-4 border-info">
+                <div class="card-header bg-info text-dark">
+                    <h5><i class="bi bi-snow"></i> Interest Freeze</h5>
+                </div>
+                <div class="card-body">
+                    {% if loan.interest_frozen %}
+                    <p class="small mb-2">
+                        Interest has been frozen since
+                        <strong>{{ loan.interest_frozen_date.strftime('%d/%m/%Y') if loan.interest_frozen_date else 'n/a' }}</strong>{% if loan.interest_frozen_by_user %}
+                        by <strong>{{ loan.interest_frozen_by_user.username }}</strong>{% endif %}.
+                        The overdue auto-extension will not add interest to this loan.
+                    </p>
+                    {% if loan.interest_frozen_reason %}
+                    <p class="small text-muted mb-3"><strong>Reason:</strong> {{ loan.interest_frozen_reason }}</p>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('loans.unfreeze_interest', id=loan.id) }}">
+                        <label for="unfreeze_reason" class="form-label small">
+                            Reason for resuming interest <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control form-control-sm mb-2" id="unfreeze_reason"
+                                  name="reason" rows="2" minlength="5" required
+                                  placeholder="Why is interest being resumed?"></textarea>
+                        <button type="submit" class="btn btn-outline-primary w-100"
+                                onsubmit="return confirm('Resume interest accrual on this loan?');">
+                            <i class="bi bi-play-circle"></i> Resume Interest
+                        </button>
+                    </form>
+                    {% else %}
+                    <p class="small text-muted mb-2">
+                        Freeze interest so the balance stops growing. The daily overdue
+                        auto-extension will skip this loan until you resume it. Repayments,
+                        reminders and overdue status are unaffected.
+                    </p>
+                    <form method="POST" action="{{ url_for('loans.freeze_interest', id=loan.id) }}">
+                        <label for="freeze_reason" class="form-label small">
+                            Reason for freezing <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control form-control-sm mb-2" id="freeze_reason"
+                                  name="reason" rows="2" minlength="5" required
+                                  placeholder="e.g. Repayment plan agreed; interest paused pending settlement"></textarea>
+                        <button type="submit" class="btn btn-info text-dark w-100">
+                            <i class="bi bi-snow"></i> Freeze Interest
+                        </button>
+                    </form>
                     {% endif %}
                 </div>
             </div>
